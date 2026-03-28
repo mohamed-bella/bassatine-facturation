@@ -62,7 +62,6 @@ export default function TrashPage() {
 
       <InvoiceList 
         invoices={invoices} 
-        onTrash={() => {}} 
         onRestore={handleRestore}
         onDelete={handleDelete}
       />

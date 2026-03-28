@@ -89,6 +89,7 @@ export interface Invoice {
   recipient_ice?: string;
   recipient_address?: string;
   recipient_email?: string;
+  is_trashed?: boolean;
   // Joined / computed fields (not stored)
   client?: Client;
   payments?: Payment[];
