@@ -3,24 +3,45 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Client } from '@/types';
-import { 
-  Users, 
-  Plus, 
-  Search, 
-  Mail, 
-  Phone, 
-  Building, 
-  MapPin, 
-  TrendingUp, 
-  Trash2, 
+import {
+  Users,
+  Plus,
+  Search,
+  Mail,
+  Phone,
+  Building,
+  Trash2,
   Edit,
   Loader2,
-  CheckCircle2,
-  Zap,
-  X,
-  Save
+  Save,
+  MoreVertical,
+  MapPin,
+  StickyNote,
+  AlertCircle,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from "@/lib/utils";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([]);
@@ -28,7 +49,12 @@ export default function ClientsPage() {
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
-  const [form, setForm] = useState({ name: '', ice: '', email: '', phone: '', address: '' });
+  const [deleteError, setDeleteError] = useState('');
+  const [form, setForm] = useState({
+    name: '', email: '', phone: '', company_ice: '',
+    address_street: '', address_city: '', address_country: 'Maroc',
+    notes: '',
+  });
 
   const fetchData = async () => {
     setLoading(true);
@@ -36,211 +62,308 @@ export default function ClientsPage() {
       .from('clients')
       .select('*')
       .order('name', { ascending: true });
-    
     setClients(data || []);
     setLoading(false);
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  useEffect(() => { fetchData(); }, []);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    let error;
     if (editingClient) {
-      await supabase.from('clients').update(form).eq('id', editingClient.id);
+      const { error: updErr } = await supabase.from('clients').update(form).eq('id', editingClient.id);
+      error = updErr;
     } else {
-      await supabase.from('clients').insert([form]);
+      const { error: insErr } = await supabase.from('clients').insert([form]);
+      error = insErr;
     }
-    setForm({ name: '', ice: '', email: '', phone: '', address: '' });
+
+    if (error) {
+       alert('Erreur lors de la sauvegarde du client : ' + error.message);
+    } else {
+       resetForm();
+       fetchData();
+    }
+  };
+
+  const resetForm = () => {
+    setForm({ name: '', email: '', phone: '', company_ice: '', address_street: '', address_city: '', address_country: 'Maroc', notes: '' });
     setEditingClient(null);
     setShowModal(false);
-    fetchData();
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Voulez-vous supprimer ce client ?')) return;
+    setDeleteError('');
+    // Check for linked proformas
+    const { count: pCount } = await supabase
+      .from('proformas')
+      .select('*', { count: 'exact', head: true })
+      .eq('client_id', id);
+    // Check for linked invoices
+    const { count: iCount } = await supabase
+      .from('invoices')
+      .select('*', { count: 'exact', head: true })
+      .eq('client_id', id);
+
+    if ((pCount || 0) > 0 || (iCount || 0) > 0) {
+      setDeleteError(`Ce partenaire a ${(pCount || 0)} proforma(s) et ${(iCount || 0)} facture(s) associées. Suppression impossible.`);
+      return;
+    }
+
+    if (!confirm('Voulez-vous supprimer ce partenaire ?')) return;
     await supabase.from('clients').delete().eq('id', id);
     fetchData();
   };
 
-  const filtered = clients.filter(c => 
-    c.name.toLowerCase().includes(search.toLowerCase()) || 
-    (c.email && c.email.toLowerCase().includes(search.toLowerCase()))
+  const filtered = clients.filter(c =>
+    c.name.toLowerCase().includes(search.toLowerCase()) ||
+    (c.email && c.email.toLowerCase().includes(search.toLowerCase())) ||
+    (c.phone && c.phone.includes(search))
   );
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-      <Loader2 className="w-10 h-10 text-orange-600 animate-spin" />
+      <Loader2 className="w-8 h-8 text-orange-600 animate-spin" />
+      <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Chargement des partenaires...</span>
     </div>
   );
 
   return (
-    <div className="px-10 pb-20">
-      <header className="flex justify-between items-end mb-16">
-        <div className="flex-1">
-           <div className="flex items-center space-x-4 mb-2">
-             <div className="w-6 h-1 bg-orange-600 rounded-full"></div>
-             <span className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-300">Client Operations</span>
-           </div>
-           <motion.h1 
-             initial={{ opacity: 0, x: -20 }}
-             animate={{ opacity: 1, x: 0 }}
-             className="text-5xl font-black tracking-tighter text-slate-900 uppercase"
-           >
-             Authority Directory
-           </motion.h1>
+    <div className="space-y-8 animate-slide-up">
+      {/* HEADER */}
+      <header className="flex justify-between items-end">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Gestion</p>
+          <h1 className="text-3xl font-black tracking-tight text-slate-900">Répertoire Partenaires</h1>
         </div>
-        <button 
-          onClick={() => { setForm({ name: '', ice: '', email: '', phone: '', address: '' }); setEditingClient(null); setShowModal(true); }}
-          className="bg-slate-900 text-white h-20 px-10 rounded-3xl text-[11px] font-black uppercase tracking-[0.3em] shadow-xl hover:bg-orange-600 transition-all flex items-center space-x-3 group"
-        >
-          <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform duration-500" />
-          <span>Onboard New</span>
-        </button>
+
+        <Dialog open={showModal} onOpenChange={(v) => { setShowModal(v); if (!v) resetForm(); }}>
+          <DialogTrigger asChild>
+            <Button className="h-11 px-6 bg-slate-900 hover:bg-orange-600 text-white rounded-xl text-xs font-bold transition-all">
+              <Plus className="w-4 h-4 mr-2" />
+              Nouveau partenaire
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-lg rounded-2xl p-8 border-none shadow-2xl bg-white">
+            <DialogHeader className="mb-6">
+              <DialogTitle className="text-xl font-black tracking-tight text-slate-900">
+                {editingClient ? 'Modifier le partenaire' : 'Nouveau partenaire'}
+              </DialogTitle>
+              <DialogDescription className="text-xs text-muted-foreground">
+                Remplissez les informations du partenaire
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSave} className="space-y-5">
+              <div className="space-y-2">
+                <Label className="text-xs font-bold text-slate-500">Nom / Raison sociale *</Label>
+                <Input
+                  value={form.name}
+                  onChange={e => setForm({ ...form, name: e.target.value })}
+                  className="h-11 bg-slate-50 border-slate-200 rounded-xl text-sm"
+                  required
+                  placeholder="Ex: Hôtel Atlas"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-slate-500">Email</Label>
+                  <Input
+                    type="email"
+                    value={form.email}
+                    onChange={e => setForm({ ...form, email: e.target.value })}
+                    className="h-11 bg-slate-50 border-slate-200 rounded-xl text-sm"
+                    placeholder="contact@hotel.com"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-slate-500">Téléphone</Label>
+                  <Input
+                    value={form.phone}
+                    onChange={e => setForm({ ...form, phone: e.target.value })}
+                    className="h-11 bg-slate-50 border-slate-200 rounded-xl text-sm"
+                    placeholder="06 XX XX XX XX"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-slate-500">Numéro ICE / Identification</Label>
+                  <Input
+                    value={form.company_ice}
+                    onChange={e => setForm({ ...form, company_ice: e.target.value })}
+                    className="h-11 bg-slate-50 border-slate-200 rounded-xl text-sm font-mono"
+                    placeholder="Ex: 002092692000010"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-slate-500">Adresse</Label>
+                  <Input
+                    value={form.address_street}
+                    onChange={e => setForm({ ...form, address_street: e.target.value })}
+                    className="h-11 bg-slate-50 border-slate-200 rounded-xl text-sm"
+                    placeholder="Rue / Avenue"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-slate-500">Ville</Label>
+                  <Input
+                    value={form.address_city}
+                    onChange={e => setForm({ ...form, address_city: e.target.value })}
+                    className="h-11 bg-slate-50 border-slate-200 rounded-xl text-sm"
+                    placeholder="Ouarzazate"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-slate-500">Pays</Label>
+                  <Input
+                    value={form.address_country}
+                    onChange={e => setForm({ ...form, address_country: e.target.value })}
+                    className="h-11 bg-slate-50 border-slate-200 rounded-xl text-sm"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-bold text-slate-500">Notes</Label>
+                <textarea
+                  rows={3}
+                  className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm focus:ring-1 focus:ring-slate-900 focus:outline-none"
+                  value={form.notes}
+                  onChange={e => setForm({ ...form, notes: e.target.value })}
+                  placeholder="Notes internes sur ce partenaire..."
+                />
+              </div>
+              <DialogFooter className="pt-4">
+                <Button type="submit" className="w-full h-11 bg-slate-900 hover:bg-orange-600 text-white rounded-xl text-sm font-bold transition-all">
+                  <Save className="w-4 h-4 mr-2" /> Enregistrer
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 mb-10">
-        <div className="lg:col-span-2 relative group">
-           <Search className="absolute left-8 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
-           <input 
-            type="text" 
-            placeholder="Search by Identity or Access Points..."
-            className="w-full bg-white border border-slate-100 p-8 pl-16 rounded-[2.5rem] text-sm font-black uppercase tracking-widest focus:ring-1 focus:ring-slate-900 shadow-sm"
+      {/* DELETE ERROR */}
+      {deleteError && (
+        <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 flex items-center space-x-3">
+          <AlertCircle className="w-5 h-5 text-rose-500 flex-shrink-0" />
+          <p className="text-sm text-rose-700 font-medium">{deleteError}</p>
+          <Button variant="ghost" size="sm" onClick={() => setDeleteError('')} className="ml-auto text-rose-500 hover:text-rose-700">Fermer</Button>
+        </div>
+      )}
+
+      {/* SEARCH + COUNT */}
+      <div className="flex items-center gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Rechercher par nom, email ou téléphone..."
+            className="pl-11 h-11 bg-white border-slate-200 rounded-xl text-sm"
             value={search}
             onChange={e => setSearch(e.target.value)}
-           />
+          />
         </div>
-        <div className="spatial-card bg-slate-900 p-8 flex items-center justify-between text-white">
-           <div className="flex flex-col">
-              <span className="text-[10px] font-black uppercase text-white/30 tracking-widest">Global Base</span>
-              <span className="text-4xl font-black tracking-tighter text-orange-600">{clients.length} <span className="text-xs text-white/10 uppercase">Authorities</span></span>
-           </div>
-           <Users className="w-10 h-10 text-white/5 stroke-[3px]" />
+        <div className="bg-slate-900 text-white rounded-xl h-11 px-5 flex items-center space-x-2">
+          <Users className="w-4 h-4 text-orange-400" />
+          <span className="text-sm font-black tabular-nums">{clients.length}</span>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      {/* GRID */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
         <AnimatePresence>
           {filtered.map((client, i) => (
-            <motion.div 
+            <motion.div
               key={client.id}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="spatial-card bg-white p-10 hover:border-orange-600/20 group cursor-pointer transition-all duration-700"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.03 }}
             >
-              <div className="flex justify-between items-start mb-10">
-                 <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center border border-slate-100 group-hover:bg-slate-900 transition-all">
-                    <Building className="w-6 h-6 text-slate-300 group-hover:text-white" />
-                 </div>
-                 <div className="flex items-center space-x-1">
-                    <button onClick={() => { setForm(client as any); setEditingClient(client); setShowModal(true); }} className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center hover:bg-orange-600 hover:text-white transition-all text-slate-300">
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button onClick={() => handleDelete(client.id)} className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all text-slate-300">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                 </div>
-              </div>
+              <Card className="border border-slate-100 shadow-sm hover:shadow-lg transition-all duration-300 rounded-2xl bg-white group h-full">
+                <CardHeader className="p-5 pb-3 flex flex-row justify-between items-start">
+                  <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center border border-slate-100 group-hover:bg-orange-50 transition-colors">
+                    <Building className="w-4 h-4 text-slate-400 group-hover:text-orange-600 transition-colors" />
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="w-8 h-8 rounded-lg opacity-0 group-hover:opacity-100 transition-all">
+                        <MoreVertical className="w-4 h-4 text-slate-400" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="rounded-xl p-1 border-slate-200 shadow-lg bg-white w-44">
+                      <DropdownMenuItem
+                        onClick={() => {
+                          setForm({
+                            name: client.name,
+                            email: client.email || '',
+                            phone: client.phone || '',
+                            company_ice: client.company_ice || '',
+                            address_street: client.address_street || '',
+                            address_city: client.address_city || '',
+                            address_country: client.address_country || 'Maroc',
+                            notes: client.notes || '',
+                          });
+                          setEditingClient(client);
+                          setShowModal(true);
+                        }}
+                        className="p-2 rounded-lg cursor-pointer text-sm"
+                      >
+                        <Edit className="w-3.5 h-3.5 mr-2 text-slate-400" />
+                        Modifier
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator className="bg-slate-100 mx-1" />
+                      <DropdownMenuItem
+                        onClick={() => handleDelete(client.id)}
+                        className="p-2 rounded-lg cursor-pointer text-sm text-rose-600 focus:bg-rose-50 focus:text-rose-700"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 mr-2" />
+                        Supprimer
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </CardHeader>
 
-              <div className="space-y-6">
-                 <h3 className="text-xl font-black tracking-tighter text-slate-900 uppercase truncate group-hover:text-orange-600 transition-colors">{client.name}</h3>
-                 <div className="space-y-4">
-                    <div className="flex items-center space-x-4 opacity-40 group-hover:opacity-100 transition-opacity">
-                       <Zap className="w-3.5 h-3.5 text-orange-600" />
-                       <span className="text-[10px] font-black uppercase tracking-widest leading-none">ICE : {client.ice || '---'}</span>
-                    </div>
+                <CardContent className="p-5 pt-2 space-y-3">
+                  <h3 className="text-base font-bold text-slate-900 leading-tight group-hover:text-orange-600 transition-colors">
+                    {client.name}
+                  </h3>
+                  <div className="space-y-1.5">
                     {client.email && (
-                      <div className="flex items-center space-x-4 opacity-40 group-hover:opacity-100 transition-opacity">
-                         <Mail className="w-3.5 h-3.5" />
-                         <span className="text-[10px] font-black uppercase tracking-widest leading-none truncate">{client.email}</span>
+                      <div className="flex items-center space-x-2 text-slate-400">
+                        <Mail className="w-3 h-3" />
+                        <span className="text-xs truncate">{client.email}</span>
                       </div>
                     )}
-                 </div>
-              </div>
+                    {client.phone && (
+                      <div className="flex items-center space-x-2 text-slate-400">
+                        <Phone className="w-3 h-3" />
+                        <span className="text-xs">{client.phone}</span>
+                      </div>
+                    )}
+                    {client.address_city && (
+                      <div className="flex items-center space-x-2 text-slate-400">
+                        <MapPin className="w-3 h-3" />
+                        <span className="text-xs">{client.address_city}{client.address_country ? `, ${client.address_country}` : ''}</span>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
 
-              <div className="mt-10 pt-10 border-t border-slate-50 flex justify-between items-center overflow-hidden">
-                 <span className="text-[9px] font-black uppercase text-slate-200 tracking-widest group-hover:text-slate-400">Authority Synchronised</span>
-                 <CheckCircle2 className="w-4 h-4 text-emerald-500/20 group-hover:text-emerald-500 transition-colors" />
-              </div>
+                {client.notes && (
+                  <CardFooter className="p-5 pt-0">
+                    <div className="flex items-start space-x-2 text-slate-300 w-full">
+                      <StickyNote className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                      <p className="text-[11px] leading-relaxed line-clamp-2">{client.notes}</p>
+                    </div>
+                  </CardFooter>
+                )}
+              </Card>
             </motion.div>
           ))}
         </AnimatePresence>
       </div>
-
-      {/* MODAL SYSTEM */}
-      <AnimatePresence>
-        {showModal && (
-          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xl z-[100] flex items-center justify-center p-10">
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 30 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 30 }}
-              className="bg-white rounded-[3rem] shadow-2xl p-16 max-w-2xl w-full border border-white"
-            >
-              <form onSubmit={handleSave} className="space-y-10">
-                <div className="flex justify-between items-center mb-10">
-                  <h3 className="text-3xl font-black uppercase tracking-tighter text-slate-900">{editingClient ? "Modifier l'autorité" : 'Nouvelle Autorité'}</h3>
-                  <button type="button" onClick={() => setShowModal(false)} className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 hover:text-slate-900 transition-all">
-                    <X className="w-6 h-6" />
-                  </button>
-                </div>
-
-                <div className="space-y-8">
-                   <div className="group">
-                      <label className="text-[9px] font-black uppercase tracking-widest text-slate-300 block mb-3 group-focus-within:text-orange-600 transition-colors">Nom / Raison Sociale</label>
-                      <input 
-                        type="text" required
-                        className="w-full bg-slate-50 border-none p-5 rounded-2xl text-[11px] font-black uppercase tracking-tight focus:ring-1 focus:ring-slate-900 placeholder:text-slate-200 shadow-inner"
-                        value={form.name}
-                        onChange={e => setForm({...form, name: e.target.value})}
-                      />
-                   </div>
-                   <div className="grid grid-cols-2 gap-8">
-                      <div className="group">
-                        <label className="text-[9px] font-black uppercase tracking-widest text-slate-300 block mb-3">Identifiant ICE</label>
-                        <input 
-                          type="text" 
-                          className="w-full bg-slate-50 border-none p-5 rounded-2xl text-[11px] font-black uppercase focus:ring-1 focus:ring-slate-900 shadow-inner"
-                          value={form.ice}
-                          onChange={e => setForm({...form, ice: e.target.value})}
-                        />
-                      </div>
-                      <div className="group">
-                        <label className="text-[9px] font-black uppercase tracking-widest text-slate-300 block mb-3">Email de contact</label>
-                        <input 
-                          type="email" 
-                          className="w-full bg-slate-50 border-none p-5 rounded-2xl text-[11px] font-black uppercase focus:ring-1 focus:ring-slate-900 shadow-inner"
-                          value={form.email}
-                          onChange={e => setForm({...form, email: e.target.value})}
-                        />
-                      </div>
-                   </div>
-                   <div className="group">
-                      <label className="text-[9px] font-black uppercase tracking-widest text-slate-300 block mb-3">Adresse de Résidence / Siège</label>
-                      <textarea 
-                        rows={3}
-                        className="w-full bg-slate-50 border-none p-5 rounded-2xl text-[11px] font-black uppercase focus:ring-1 focus:ring-slate-900 shadow-inner"
-                        value={form.address}
-                        onChange={e => setForm({...form, address: e.target.value})}
-                      />
-                   </div>
-                </div>
-
-                <button 
-                  type="submit" 
-                  className="w-full bg-slate-900 text-white h-20 rounded-2xl text-[11px] font-black uppercase tracking-[0.4em] shadow-2xl hover:bg-orange-600 transition-all flex items-center justify-center space-x-3 group relative overflow-hidden"
-                >
-                  <div className="absolute inset-0 bg-white/20 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 skew-x-12"></div>
-                  <Save className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                  <span>Confirmer Registry</span>
-                </button>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

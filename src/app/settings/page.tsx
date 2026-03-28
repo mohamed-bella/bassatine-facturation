@@ -1,317 +1,267 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Settings } from '@/types';
-import { 
-  Loader2, 
-  Save, 
-  Image as ImageIcon, 
-  Building, 
-  Mail, 
-  FileText, 
-  CheckCircle2, 
-  Globe, 
-  Zap, 
-  ShieldCheck, 
-  Smartphone,
-  Server,
-  X,
-  RefreshCw,
-  Edit,
-  Trash2
+import {
+  Save,
+  Loader2,
+  Building2,
+  Image as ImageIcon,
+  Phone,
+  MapPin,
+  Hash,
+  FileText,
+  CheckCircle2,
+  Upload,
+  Stamp,
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+
+const DEFAULT_SETTINGS: Settings = {
+  id: 'global',
+  logo_url: '',
+  stamp_url: '',
+  company_name: 'BOUMHCHAD SARL AU',
+  company_sub_name: 'BASSATINE SKOURA',
+  company_email: 'contact@bassatine-skoura.com',
+  company_address: 'Douar Boumhchad Skoura – Ouarzazate',
+  company_phone: '06 23 34 99 51 – 06 61 70 99 20',
+  company_ice: '002092692000010',
+  company_rc: '7755/Ouarzazate',
+  company_tp: '47165021',
+  company_if: '25287521',
+  company_cnss: '1093803',
+};
 
 export default function SettingsPage() {
-  const [settings, setSettings] = useState<Settings | null>(null);
+  const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [activeTab, setActiveTab] = useState<'branding' | 'communication' | 'advanced'>('branding');
+  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     const fetchSettings = async () => {
-      const { data, error } = await supabase
-        .from('settings')
-        .select('*')
-        .eq('id', 'global')
-        .single();
-
-      if (error) {
-        console.error('Error fetching settings:', error);
-      } else {
-        setSettings(data);
-      }
+      const { data } = await supabase.from('settings').select('*').eq('id', 'global').single();
+      if (data) setSettings({ ...DEFAULT_SETTINGS, ...data });
       setLoading(false);
     };
-
     fetchSettings();
   }, []);
 
-  const handleUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!settings) return;
+  const handleSave = async () => {
     setSaving(true);
-    setSuccess(false);
-
-    const { error } = await supabase
-      .from('settings')
-      .update(settings)
-      .eq('id', 'global');
-
-    if (error) {
-      alert('Error updating: ' + error.message);
-    } else {
-      setSuccess(true);
-      setTimeout(() => setSuccess(false), 3000);
-    }
+    const { error } = await supabase.from('settings').upsert(settings, { onConflict: 'id' });
     setSaving(false);
+    if (!error) {
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } else {
+      alert('Erreur lors de la sauvegarde : ' + error.message);
+    }
+  };
+
+  const set = (field: keyof Settings, value: string) => {
+    setSettings(prev => ({ ...prev, [field]: value }));
+    setSaved(false);
   };
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-      <Loader2 className="w-10 h-10 text-orange-600 animate-spin" />
+      <Loader2 className="w-8 h-8 text-orange-600 animate-spin" />
+      <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Chargement...</span>
     </div>
   );
 
   return (
-    <div className="max-w-7xl mx-auto px-10 pb-40 animate-slide-up">
-      <header className="mb-20">
-         <div className="flex items-center space-x-4 mb-2">
-            <div className="w-6 h-1 bg-orange-600 rounded-full"></div>
-            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-300">System Nucleus</span>
-         </div>
-         <motion.h1 
-           initial={{ opacity: 0, x: -20 }}
-           animate={{ opacity: 1, x: 0 }}
-           className="text-5xl font-black tracking-tighter text-slate-900 uppercase"
-         >
-           Settings Studio
-         </motion.h1>
+    <div className="max-w-3xl mx-auto space-y-10 animate-slide-up pb-20">
+      {/* HEADER */}
+      <header className="flex justify-between items-end">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Configuration</p>
+          <h1 className="text-3xl font-black tracking-tight text-slate-900">Paramètres Hôtel</h1>
+        </div>
+        <Button
+          onClick={handleSave}
+          disabled={saving}
+          className="h-11 px-8 rounded-xl text-xs font-bold transition-all bg-slate-900 hover:bg-orange-600 text-white"
+        >
+          {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : saved ? <CheckCircle2 className="w-4 h-4 mr-2 text-emerald-400" /> : <Save className="w-4 h-4 mr-2" />}
+          {saved ? 'Sauvegardé !' : 'Sauvegarder'}
+        </Button>
       </header>
 
-      <div className="flex flex-col lg:flex-row gap-16">
-         {/* TABS NAVIGATION */}
-         <aside className="lg:w-80 space-y-4">
-            {[
-              { id: 'branding', label: 'Identity Architecture', icon: Building },
-              { id: 'communication', label: 'Messaging Flow', icon: Mail },
-              { id: 'advanced', label: 'System Reality', icon: Server },
-            ].map((tab) => (
-              <button 
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`w-full p-8 rounded-[2rem] flex items-center space-x-6 transition-all duration-500 border relative group ${activeTab === tab.id ? 'bg-slate-900 border-slate-900 shadow-2xl scale-105' : 'bg-white border-slate-100 hover:border-orange-600/20'}`}
-              >
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-colors ${activeTab === tab.id ? 'bg-white/10 text-orange-600' : 'bg-slate-50 text-slate-300 group-hover:bg-slate-900 group-hover:text-white'}`}>
-                   <tab.icon className="w-5 h-5" />
-                </div>
-                <span className={`text-[11px] font-black uppercase tracking-widest text-left ${activeTab === tab.id ? 'text-white' : 'text-slate-300 group-hover:text-slate-900'}`}>{tab.label}</span>
-                {activeTab === tab.id && (
-                  <motion.div layoutId="tab-active" className="absolute right-6 w-2 h-2 bg-orange-600 rounded-full animate-pulse" />
+      {/* IDENTITY */}
+      <Card className="border border-slate-100 rounded-2xl shadow-sm">
+        <CardHeader className="p-6 pb-4">
+          <div className="flex items-center space-x-3">
+            <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center">
+              <Building2 className="w-5 h-5 text-blue-600" />
+            </div>
+            <div>
+              <CardTitle className="text-sm font-black text-slate-900">Identité de l'établissement</CardTitle>
+              <CardDescription className="text-xs text-muted-foreground mt-0.5">Ces informations apparaissent sur tous vos documents</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-6 pt-0 grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div className="space-y-2">
+            <Label className="text-xs font-bold text-slate-500">Raison sociale</Label>
+            <Input value={settings.company_name || ''} onChange={e => set('company_name', e.target.value)}
+              className="h-11 bg-slate-50 border-slate-200 rounded-xl text-sm font-bold" placeholder="BOUMHCHAD SARL AU" />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-xs font-bold text-slate-500">Nom de l'hôtel / Sous-titre</Label>
+            <Input value={settings.company_sub_name || ''} onChange={e => set('company_sub_name', e.target.value)}
+              className="h-11 bg-slate-50 border-slate-200 rounded-xl text-sm" placeholder="BASSATINE SKOURA" />
+          </div>
+          <div className="space-y-2 md:col-span-2">
+            <Label className="text-xs font-bold text-slate-500 flex items-center"><MapPin className="w-3.5 h-3.5 mr-1.5" /> Adresse</Label>
+            <Input value={settings.company_address || ''} onChange={e => set('company_address', e.target.value)}
+              className="h-11 bg-slate-50 border-slate-200 rounded-xl text-sm" placeholder="Douar Boumhchad Skoura – Ouarzazate" />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-xs font-bold text-slate-500 flex items-center"><Phone className="w-3.5 h-3.5 mr-1.5" /> Téléphone(s)</Label>
+            <Input value={settings.company_phone || ''} onChange={e => set('company_phone', e.target.value)}
+              className="h-11 bg-slate-50 border-slate-200 rounded-xl text-sm" placeholder="06 23 34 99 51 – 06 61 70 99 20" />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-xs font-bold text-slate-500 flex items-center">Email</Label>
+            <Input value={settings.company_email || ''} onChange={e => set('company_email', e.target.value)}
+              className="h-11 bg-slate-50 border-slate-200 rounded-xl text-sm" placeholder="contact@bassatine.com" />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* FISCAL */}
+      <Card className="border border-slate-100 rounded-2xl shadow-sm">
+        <CardHeader className="p-6 pb-4">
+          <div className="flex items-center space-x-3">
+            <div className="w-9 h-9 rounded-xl bg-orange-50 flex items-center justify-center">
+              <Hash className="w-5 h-5 text-orange-600" />
+            </div>
+            <div>
+              <CardTitle className="text-sm font-black text-slate-900">Identification fiscale</CardTitle>
+              <CardDescription className="text-xs text-muted-foreground mt-0.5">Numéros légaux affichés en pied de documents</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-6 pt-0 grid grid-cols-1 md:grid-cols-2 gap-5">
+          {[
+            { key: 'company_ice', label: 'ICE', placeholder: '002092692000010' },
+            { key: 'company_rc', label: 'RC', placeholder: '7755/Ouarzazate' },
+            { key: 'company_tp', label: 'T.P', placeholder: '47165021' },
+            { key: 'company_if', label: 'IF', placeholder: '25287521' },
+            { key: 'company_cnss', label: 'CNSS', placeholder: '1093803' },
+          ].map(field => (
+            <div key={field.key} className="space-y-2">
+              <Label className="text-xs font-bold text-slate-500">{field.label}</Label>
+              <Input
+                value={(settings as any)[field.key] || ''}
+                onChange={e => set(field.key as keyof Settings, e.target.value)}
+                className="h-11 bg-slate-50 border-slate-200 rounded-xl text-sm font-mono"
+                placeholder={field.placeholder}
+              />
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      {/* MEDIA */}
+      <Card className="border border-slate-100 rounded-2xl shadow-sm">
+        <CardHeader className="p-6 pb-4">
+          <div className="flex items-center space-x-3">
+            <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center">
+              <ImageIcon className="w-5 h-5 text-emerald-600" />
+            </div>
+            <div>
+              <CardTitle className="text-sm font-black text-slate-900">Médias & Visuels</CardTitle>
+              <CardDescription className="text-xs text-muted-foreground mt-0.5">Logo et cachet apposés automatiquement sur les factures</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-6 pt-0 space-y-6">
+          {/* LOGO */}
+          <div className="space-y-3">
+            <Label className="text-xs font-bold text-slate-500 flex items-center"><ImageIcon className="w-3.5 h-3.5 mr-1.5" /> URL du Logo</Label>
+            <Input value={settings.logo_url || ''} onChange={e => set('logo_url', e.target.value)}
+              className="h-11 bg-slate-50 border-slate-200 rounded-xl text-sm font-mono text-xs" placeholder="https://..." />
+            {settings.logo_url && (
+              <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl flex items-center space-x-4">
+                <img src={settings.logo_url} alt="Logo preview" className="max-h-16 max-w-[200px] object-contain rounded" onError={(e) => (e.currentTarget.style.display = 'none')} />
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Aperçu du logo</p>
+              </div>
+            )}
+          </div>
+
+          <Separator className="bg-slate-100" />
+
+          {/* STAMP */}
+          <div className="space-y-3">
+            <Label className="text-xs font-bold text-slate-500 flex items-center"><Stamp className="w-3.5 h-3.5 mr-1.5" /> URL du Cachet / Tampon</Label>
+            <p className="text-[11px] text-muted-foreground italic">Le cachet sera automatiquement affiché sur les <strong>Factures Commerciales</strong> (non sur les proformas).</p>
+            <Input value={settings.stamp_url || ''} onChange={e => set('stamp_url', e.target.value)}
+              className="h-11 bg-slate-50 border-slate-200 rounded-xl text-sm font-mono text-xs" placeholder="https://..." />
+            {settings.stamp_url && (
+              <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl flex items-center space-x-4">
+                <img src={settings.stamp_url} alt="Cachet preview" className="max-h-24 max-w-[200px] object-contain rounded opacity-80" onError={(e) => (e.currentTarget.style.display = 'none')} />
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Aperçu du cachet</p>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* PREVIEW */}
+      <Card className="border-2 border-dashed border-slate-100 rounded-2xl bg-white overflow-hidden">
+        <CardHeader className="p-6 pb-4">
+          <CardTitle className="text-xs font-black text-slate-500 uppercase tracking-widest flex items-center">
+            <FileText className="w-4 h-4 mr-2 text-orange-600" /> Aperçu entête de facture
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-6 pt-0">
+          <div className="border border-slate-100 rounded-xl p-8 bg-white text-sm" style={{ fontFamily: 'Arial, sans-serif' }}>
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                {settings.logo_url ? (
+                  <img src={settings.logo_url} alt="Logo" className="h-16 mb-3 object-contain" onError={(e) => (e.currentTarget.style.display = 'none')} />
+                ) : (
+                  <div className="w-16 h-16 bg-slate-100 rounded-xl mb-3 flex items-center justify-center">
+                    <ImageIcon className="w-8 h-8 text-slate-300" />
+                  </div>
                 )}
-              </button>
-            ))}
-         </aside>
+                <p className="font-black text-base">{settings.company_name}</p>
+                <p className="text-xs font-bold text-slate-500">{settings.company_sub_name}</p>
+                <p className="text-xs text-slate-400">{settings.company_address}</p>
+                <p className="text-xs text-slate-400">{settings.company_phone}</p>
+              </div>
+              <div className="text-right text-sm">
+                <p className="font-bold text-slate-700">OUARZAZATE LE : <strong>{new Date().toLocaleDateString('fr-FR')}</strong></p>
+              </div>
+            </div>
+            <p className="text-base font-black mb-2">FACTURE COMMERCIALE N° : XXX</p>
+            <p className="text-sm"><span className="text-[#2563eb] font-bold">DOIT :</span> <strong>NOM DU CLIENT</strong></p>
+            <p className="text-sm"><span className="text-[#2563eb] font-bold">ICE :</span> <strong>000000000000000</strong></p>
+          </div>
+        </CardContent>
+      </Card>
 
-         {/* MAIN CONFIGURATION STAGE */}
-         <div className="flex-1">
-            <form onSubmit={handleUpdate} className="grid grid-cols-1 lg:grid-cols-3 gap-10 items-start">
-               <div className="lg:col-span-2 space-y-10">
-                  <AnimatePresence mode="wait">
-                    {activeTab === 'branding' && (
-                      <motion.section 
-                        key="branding"
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        className="spatial-card bg-white p-14 space-y-12"
-                      >
-                         <h3 className="text-xl font-black tracking-tighter text-slate-900 uppercase flex items-center">
-                            <Zap className="w-5 h-5 text-orange-600 mr-4" />
-                            Visual Identity
-                         </h3>
-                         
-                         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                            <div className="group">
-                               <label className="text-[9px] font-black uppercase tracking-widest text-slate-300 block mb-4 group-focus-within:text-orange-600">Offical Company Identity</label>
-                               <input 
-                                type="text" 
-                                className="w-full bg-slate-50 border-none p-5 rounded-2xl text-xs font-black uppercase focus:ring-1 focus:ring-slate-900 shadow-inner"
-                                value={settings?.company_name}
-                                onChange={e => setSettings(prev => prev ? {...prev, company_name: e.target.value} : null)}
-                               />
-                            </div>
-                            <div className="group">
-                               <label className="text-[9px] font-black uppercase tracking-widest text-slate-300 block mb-4">Official ICE Identifier</label>
-                               <input 
-                                type="text" 
-                                className="w-full bg-slate-50 border-none p-5 rounded-2xl text-xs font-black focus:ring-1 focus:ring-slate-900 shadow-inner"
-                                value={settings?.company_ice || ''}
-                                onChange={e => setSettings(prev => prev ? {...prev, company_ice: e.target.value} : null)}
-                               />
-                            </div>
-                         </div>
-
-                         <div className="group">
-                            <label className="text-[9px] font-black uppercase tracking-widest text-slate-300 block mb-4">Master Logo URL (High DPI)</label>
-                            <div className="flex items-center space-x-6">
-                               <input 
-                                type="text" 
-                                className="flex-1 bg-slate-50 border-none p-5 rounded-2xl text-xs font-black focus:ring-1 focus:ring-slate-900 shadow-inner"
-                                value={settings?.logo_url}
-                                onChange={e => setSettings(prev => prev ? {...prev, logo_url: e.target.value} : null)}
-                               />
-                               {settings?.logo_url && (
-                                <div className="w-20 h-20 bg-white border border-slate-100 rounded-2xl p-4 shadow-sm flex items-center justify-center grayscale group-hover:grayscale-0 transition-all duration-700">
-                                   <img src={settings.logo_url} className="max-w-full max-h-full" alt="Logo" />
-                                </div>
-                               )}
-                            </div>
-                         </div>
-
-                         <div className="group">
-                            <label className="text-[9px] font-black uppercase tracking-widest text-slate-300 block mb-4">Document Legal Signature (Footer Details)</label>
-                            <textarea 
-                              rows={5}
-                              className="w-full bg-slate-50 border-none p-6 rounded-[2.5rem] text-xs font-bold leading-relaxed focus:ring-1 focus:ring-slate-900 shadow-inner"
-                              value={settings?.company_details}
-                              onChange={e => setSettings(prev => prev ? {...prev, company_details: e.target.value} : null)}
-                            />
-                         </div>
-                      </motion.section>
-                    )}
-
-                    {activeTab === 'communication' && (
-                      <motion.section 
-                        key="comm"
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        className="spatial-card bg-white p-14 space-y-12"
-                      >
-                         <h3 className="text-xl font-black tracking-tighter text-slate-900 uppercase flex items-center">
-                            <Mail className="w-5 h-5 text-emerald-500 mr-4" />
-                            Messaging Orchestration
-                         </h3>
-
-                         <div className="group">
-                            <label className="text-[9px] font-black uppercase tracking-widest text-slate-300 block mb-4">Global Subject Architecture</label>
-                            <input 
-                              type="text" 
-                              className="w-full bg-slate-50 border-none p-5 rounded-2xl text-xs font-black uppercase focus:ring-1 focus:ring-slate-900 shadow-inner"
-                              value={settings?.email_subject}
-                              onChange={e => setSettings(prev => prev ? {...prev, email_subject: e.target.value} : null)}
-                            />
-                         </div>
-
-                         <div className="group">
-                            <label className="text-[9px] font-black uppercase tracking-widest text-slate-300 block mb-4">Master Email Reality (Template)</label>
-                            <textarea 
-                              rows={10}
-                              className="w-full bg-slate-50 border-none p-8 rounded-[3rem] text-xs font-bold leading-relaxed focus:ring-1 focus:ring-slate-900 shadow-inner"
-                              value={settings?.email_template}
-                              onChange={e => setSettings(prev => prev ? {...prev, email_template: e.target.value} : null)}
-                              placeholder="Utilisez les tags : {client_name}, {invoice_number}"
-                            />
-                            <div className="mt-6 flex items-center space-x-6">
-                               <div className="flex items-center space-x-2 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
-                                  <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></div>
-                                  <span className="text-[9px] font-black uppercase tracking-widest text-emerald-600">{"{client_name}"} available</span>
-                               </div>
-                               <div className="flex items-center space-x-2 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
-                                  <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></div>
-                                  <span className="text-[9px] font-black uppercase tracking-widest text-emerald-600">{"{invoice_number}"} available</span>
-                               </div>
-                            </div>
-                         </div>
-                      </motion.section>
-                    )}
-
-                    {activeTab === 'advanced' && (
-                      <motion.section 
-                        key="advanced"
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        className="spatial-card bg-slate-900 p-14 text-white space-y-12"
-                      >
-                         <h3 className="text-xl font-black tracking-tighter uppercase flex items-center">
-                            <ShieldCheck className="w-5 h-5 text-orange-600 mr-4 shadow-sm" />
-                            System Reality
-                         </h3>
-
-                         <div className="group">
-                            <label className="text-[9px] font-black uppercase tracking-widest text-white/30 block mb-4">Default Tax Architecture (%)</label>
-                            <input 
-                              type="number" step="0.01"
-                              className="w-full bg-white/5 border border-white/5 p-5 rounded-2xl text-xs font-black focus:ring-1 focus:ring-orange-600 shadow-inner text-white"
-                              value={settings?.default_tax_rate}
-                              onChange={e => setSettings(prev => prev ? {...prev, default_tax_rate: parseFloat(e.target.value)} : null)}
-                            />
-                         </div>
-
-                         <div className="flex flex-col space-y-6 pt-10 border-t border-white/5">
-                            <div className="flex items-center justify-between opacity-30 hover:opacity-100 transition-opacity">
-                               <div className="flex items-center space-x-4">
-                                  <Smartphone className="w-5 h-5" />
-                                  <span className="text-[10px] font-black uppercase tracking-[0.2em]">Mobile Sync Architecture</span>
-                               </div>
-                               <span className="text-[8px] font-black bg-white/10 px-2 py-1 rounded">DEPRECATED</span>
-                            </div>
-                            <div className="flex items-center justify-between opacity-30 hover:opacity-100 transition-opacity">
-                               <div className="flex items-center space-x-4">
-                                  <Globe className="w-5 h-5" />
-                                  <span className="text-[10px] font-black uppercase tracking-[0.2em]">Multilingual Realities</span>
-                               </div>
-                               <span className="text-[8px] font-black bg-white/10 px-2 py-1 rounded">BETA</span>
-                            </div>
-                         </div>
-                      </motion.section>
-                    )}
-                  </AnimatePresence>
-               </div>
-
-               <div className="space-y-8 sticky top-32">
-                  <div className="spatial-card bg-white p-10 space-y-10 border-slate-100/50 shadow-2xl relative overflow-hidden group">
-                     <div className="flex items-center space-x-4 relative z-10">
-                        <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div>
-                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-300">Synchronized State</span>
-                     </div>
-
-                     <button 
-                       type="submit" 
-                       disabled={saving}
-                       className={`w-full h-20 rounded-[2rem] text-[11px] font-black uppercase tracking-[0.4em] transition-all flex items-center justify-center space-x-3 shadow-2xl relative overflow-hidden z-10 ${success ? 'bg-emerald-500 shadow-emerald-500/20 text-white' : 'bg-slate-900 hover:bg-orange-600 text-white shadow-slate-900/10'}`}
-                     >
-                        <div className="absolute inset-0 bg-white/20 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 skew-x-12"></div>
-                        {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : 
-                         success ? <CheckCircle2 className="w-5 h-5 animate-bounce" /> : (
-                         <>
-                           <Save className="w-4 h-4 translate-y-[1px]" />
-                           <span>Save Nucles</span>
-                         </>
-                        )}
-                     </button>
-
-                     <div className="text-[9px] font-bold text-slate-300 uppercase tracking-widest text-center relative z-10 px-4">
-                       Les modifications impacteront tous les documents futurs générés par la suite.
-                     </div>
-
-                     <div className="absolute top-[-50px] right-[-50px] w-40 h-40 bg-orange-600/5 blur-3xl pointer-events-none group-hover:bg-orange-600/10 transition-colors" />
-                  </div>
-
-                  <div className="spatial-card p-10 bg-slate-50 border-slate-100 group">
-                     <h4 className="text-[9px] font-black text-slate-300 uppercase tracking-[0.3em] mb-6 block">Quick Recovery</h4>
-                     <button type="button" onClick={() => location.reload()} className="flex items-center space-x-4 text-[11px] font-black uppercase text-slate-900 tracking-widest hover:text-orange-600 transition-colors">
-                        <RefreshCw className="w-4 h-4 group-hover:rotate-180 transition-transform duration-700" />
-                        <span>Force Sync State</span>
-                     </button>
-                  </div>
-               </div>
-            </form>
-         </div>
+      {/* SAVE FOOTER */}
+      <div className="flex justify-end pt-4">
+        <Button
+          onClick={handleSave}
+          disabled={saving}
+          size="lg"
+          className="h-13 px-10 rounded-xl text-sm font-black transition-all bg-slate-900 hover:bg-orange-600 text-white shadow-2xl shadow-slate-900/10"
+        >
+          {saving ? <Loader2 className="w-5 h-5 animate-spin mr-3" /> : saved ? <CheckCircle2 className="w-5 h-5 mr-3 text-emerald-400" /> : <Save className="w-5 h-5 mr-3" />}
+          {saved ? 'Configuration sauvegardée !' : 'Sauvegarder la configuration'}
+        </Button>
       </div>
     </div>
   );

@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { Invoice, Client, CatalogItem, LineItem, TvaMode } from '@/types';
+import { Proforma, Client, CatalogItem, LineItem, TvaMode } from '@/types';
 import { calcLineSubtotal, calcDocumentTotals, formatMAD, generateNextNumber } from '@/lib/calculations';
 import {
   Plus,
@@ -11,9 +11,14 @@ import {
   Save,
   ChevronLeft,
   Loader2,
+  Search,
+  Zap,
+  Clock,
   Package,
   PlusCircle,
-  Lock,
+  Bed,
+  UtensilsCrossed,
+  Receipt,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
@@ -22,6 +27,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -33,15 +45,16 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 interface Props {
-  initialData?: Invoice;
+  initialData?: Proforma;
   isEdit?: boolean;
 }
 
 const EMPTY_LINE: LineItem = { description: '', quantity: 1, nb_clients: 1, unit_price: 0, subtotal: 0 };
 
-export default function InvoiceBuilder({ initialData, isEdit = false }: Props) {
+export default function ProformaBuilder({ initialData, isEdit = false }: Props) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [clients, setClients] = useState<Client[]>([]);
@@ -50,7 +63,7 @@ export default function InvoiceBuilder({ initialData, isEdit = false }: Props) {
   const [openCatalogPicker, setOpenCatalogPicker] = useState(false);
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const [formData, setFormData] = useState<Partial<Invoice>>(() => {
+  const [formData, setFormData] = useState<Partial<Proforma>>(() => {
     if (initialData) {
       return {
         ...initialData,
@@ -63,37 +76,36 @@ export default function InvoiceBuilder({ initialData, isEdit = false }: Props) {
       };
     }
     return {
-      invoice_number: '',
+      proforma_number: '',
       client_id: undefined,
-      proforma_id: undefined,
       created_at: format(new Date(), 'yyyy-MM-dd'),
-      due_date: format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
+      expires_at: undefined,
       status: 'brouillon',
       items_json: [{ ...EMPTY_LINE }],
       tva_mode: 'ht',
       subtotal_ht: 0,
       tva_amount: 0,
       total_ttc: 0,
-      amount_words: '',
       notes: '',
     };
   });
 
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
 
+  // Fetch clients, catalog, and generate number
   useEffect(() => {
     const fetchData = async () => {
       const [{ data: cData }, { data: catData }, { data: nums }] = await Promise.all([
         supabase.from('clients').select('*').order('name'),
         supabase.from('product_catalog').select('*').eq('is_active', true).order('sort_order'),
-        supabase.from('invoices').select('invoice_number'),
+        supabase.from('proformas').select('proforma_number'),
       ]);
       setClients(cData || []);
       setCatalogItems(catData || []);
 
       if (!isEdit && nums) {
-        const nextNum = generateNextNumber('FACTURE-COMMERCIAL', nums.map(n => n.invoice_number));
-        setFormData(prev => ({ ...prev, invoice_number: nextNum }));
+        const nextNum = generateNextNumber('FAC-PROFORMA', nums.map(n => n.proforma_number));
+        setFormData(prev => ({ ...prev, proforma_number: nextNum }));
       }
 
       // Check for AI source data
@@ -111,9 +123,8 @@ export default function InvoiceBuilder({ initialData, isEdit = false }: Props) {
               unit_price: item.unit_price || 0,
               subtotal: (item.quantity || 1) * (item.unit_price || 0)
             })),
-            amount_words: aiData.amount_words || prev.amount_words,
+            amount_words: aiData.amount_words || '',
             notes: aiData.notes || prev.notes,
-            // Pre-fill manual client fields for the form
             recipient_name: aiData.client_name || '',
             recipient_ice: aiData.client_ice || '',
             recipient_address: aiData.client_address || '',
@@ -140,6 +151,7 @@ export default function InvoiceBuilder({ initialData, isEdit = false }: Props) {
         }
       }
 
+      // Load client if editing
       if (initialData?.client_id && cData) {
         const c = cData.find(c => c.id === initialData.client_id);
         if (c) setSelectedClient(c);
@@ -148,10 +160,12 @@ export default function InvoiceBuilder({ initialData, isEdit = false }: Props) {
     fetchData();
   }, [isEdit, initialData?.client_id]);
 
+  // Calculate totals
   const totals = useMemo(() => {
     return calcDocumentTotals(formData.items_json || [], formData.tva_mode || 'ht');
   }, [formData.items_json, formData.tva_mode]);
 
+  // Sync totals to form
   useEffect(() => {
     setFormData(prev => ({
       ...prev,
@@ -161,13 +175,99 @@ export default function InvoiceBuilder({ initialData, isEdit = false }: Props) {
     }));
   }, [totals]);
 
+  // Client section UI
+  const renderClientSection = () => (
+    <Card className="border border-slate-100 rounded-2xl shadow-sm">
+      <CardHeader className="p-6 pb-4 flex flex-row justify-between items-center">
+        <CardTitle className="text-sm font-bold text-slate-900">Partenaire</CardTitle>
+        <Popover open={openClientSearch} onOpenChange={setOpenClientSearch}>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="rounded-xl text-xs font-bold h-9" disabled={isLocked}>
+              <PlusCircle className="w-3.5 h-3.5 mr-2" />
+              {selectedClient ? 'Changer' : 'Sélectionner'}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[350px] p-0 rounded-xl shadow-lg border-slate-200" align="end">
+            <Command>
+              <CommandInput className="text-sm" placeholder="Rechercher un partenaire..." />
+              <CommandList className="max-h-[250px]">
+                <CommandEmpty className="py-8 text-center text-sm text-muted-foreground">Aucun partenaire trouvé</CommandEmpty>
+                <CommandGroup>
+                  {clients.map(client => (
+                    <CommandItem key={client.id} onSelect={() => selectClient(client)} className="p-3 cursor-pointer">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-bold text-slate-900">{client.name}</span>
+                        {client.email && <span className="text-xs text-muted-foreground">{client.email}</span>}
+                      </div>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+      </CardHeader>
+      <CardContent className="p-6 pt-0 space-y-4">
+        {selectedClient ? (
+          <div className="bg-slate-50 rounded-xl p-4 space-y-1 relative group">
+            <p className="text-sm font-bold text-slate-900">{selectedClient.name}</p>
+            {selectedClient.email && <p className="text-xs text-muted-foreground">{selectedClient.email}</p>}
+            {selectedClient.company_ice && <p className="text-[10px] font-black text-indigo-500 uppercase">ICE: {selectedClient.company_ice}</p>}
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="absolute top-2 right-2 w-7 h-7 opacity-0 group-hover:opacity-100 transition-all text-slate-400 hover:text-slate-900"
+              onClick={() => { setSelectedClient(null); setFormData(p => ({ ...p, client_id: undefined })); }}
+            >
+              <Plus className="w-4 h-4 rotate-45" />
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nom de l'établissement / Partenaire</Label>
+              <Input 
+                value={formData.recipient_name || ''} 
+                onChange={e => setFormData({ ...formData, recipient_name: e.target.value })}
+                className="bg-slate-50 border-slate-200 h-10 rounded-lg text-sm"
+                placeholder="Saisir manuellement ou choisir ci-dessus..."
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">N° ICE</Label>
+                <Input 
+                  value={formData.recipient_ice || ''} 
+                  onChange={e => setFormData({ ...formData, recipient_ice: e.target.value })}
+                  className="bg-slate-50 border-slate-200 h-10 rounded-lg text-sm"
+                  placeholder="Ex: 001234..."
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Adresse (facultatif)</Label>
+                <Input 
+                  value={formData.recipient_address || ''} 
+                  onChange={e => setFormData({ ...formData, recipient_address: e.target.value })}
+                  className="bg-slate-50 border-slate-200 h-10 rounded-lg text-sm"
+                  placeholder="Ville..."
+                />
+              </div>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+
   // Auto-save for brouillon
   useEffect(() => {
     if (formData.status !== 'brouillon' || !isEdit || !initialData?.id) return;
+
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
     autoSaveTimer.current = setTimeout(async () => {
-      await supabase.from('invoices').update({
-        ...formData,
+      const { amount_words, ...validFormData } = formData;
+      const dataToSave = {
+        ...validFormData,
         updated_at: new Date().toISOString(),
         subtotal_ht: totals.subtotal_ht,
         tva_amount: totals.tva_amount,
@@ -176,8 +276,10 @@ export default function InvoiceBuilder({ initialData, isEdit = false }: Props) {
         recipient_ice: formData.recipient_ice || selectedClient?.company_ice || '',
         recipient_address: formData.recipient_address || selectedClient?.address_street || '',
         recipient_email: formData.recipient_email || selectedClient?.email || '',
-      }).eq('id', initialData.id);
+      };
+      await supabase.from('proformas').update(dataToSave).eq('id', initialData.id);
     }, 5000);
+
     return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
   }, [formData, totals, isEdit, initialData?.id, selectedClient]);
 
@@ -194,16 +296,25 @@ export default function InvoiceBuilder({ initialData, isEdit = false }: Props) {
       unit_price: catItem.default_price,
       subtotal: catItem.default_price,
     };
-    setFormData(prev => ({ ...prev, items_json: [...(prev.items_json || []), newLine] }));
+    setFormData(prev => ({
+      ...prev,
+      items_json: [...(prev.items_json || []), newLine],
+    }));
     setOpenCatalogPicker(false);
   };
 
   const addEmptyItem = () => {
-    setFormData(prev => ({ ...prev, items_json: [...(prev.items_json || []), { ...EMPTY_LINE }] }));
+    setFormData(prev => ({
+      ...prev,
+      items_json: [...(prev.items_json || []), { ...EMPTY_LINE }],
+    }));
   };
 
   const removeItem = (index: number) => {
-    setFormData(prev => ({ ...prev, items_json: prev.items_json?.filter((_, i) => i !== index) }));
+    setFormData(prev => ({
+      ...prev,
+      items_json: prev.items_json?.filter((_, i) => i !== index),
+    }));
   };
 
   const updateItem = (index: number, field: keyof LineItem, value: any) => {
@@ -230,25 +341,24 @@ export default function InvoiceBuilder({ initialData, isEdit = false }: Props) {
 
     let res;
     if (isEdit && initialData?.id) {
-      res = await supabase.from('invoices').update(dataToSave).eq('id', initialData.id);
+      res = await supabase.from('proformas').update(dataToSave).eq('id', initialData.id);
     } else {
       // Legacy compatibility: fill old columns with defaults if they exist as NOT NULL
       const insertData = {
         ...dataToSave,
-        invoice_type: 'commercial'
       };
-      res = await supabase.from('invoices').insert([insertData]).select();
+      res = await supabase.from('proformas').insert([insertData]).select();
     }
 
     if (res.error) {
       alert('Erreur: ' + res.error.message);
     } else {
-      router.push('/f-commercial');
+      router.push('/proformas');
     }
     setSaving(false);
   };
 
-  const isLocked = formData.status !== 'brouillon' && formData.status !== 'envoyée';
+  const isLocked = formData.status !== 'brouillon' && formData.status !== 'envoyé';
 
   const groupedCatalog = useMemo(() => {
     const groups: Record<string, CatalogItem[]> = {};
@@ -259,7 +369,12 @@ export default function InvoiceBuilder({ initialData, isEdit = false }: Props) {
     return groups;
   }, [catalogItems]);
 
-  const categoryLabels: Record<string, string> = { chambre: 'Chambres', service: 'Services', taxe: 'Taxes', autre: 'Autres' };
+  const categoryLabels: Record<string, string> = {
+    chambre: 'Chambres',
+    service: 'Services',
+    taxe: 'Taxes',
+    autre: 'Autres',
+  };
 
   return (
     <div className="max-w-7xl mx-auto pb-40 animate-slide-up">
@@ -271,18 +386,13 @@ export default function InvoiceBuilder({ initialData, isEdit = false }: Props) {
           </Button>
           <div>
             <h2 className="text-2xl font-black tracking-tight text-slate-900">
-              {isEdit ? 'Modifier la facture' : 'Nouvelle Facture Commerciale'}
+              {isEdit ? 'Modifier le document' : 'Nouvelle Facture Proforma'}
             </h2>
-            <p className="text-xs text-muted-foreground mt-0.5">{formData.invoice_number}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{formData.proforma_number}</p>
           </div>
         </div>
         <div className="flex items-center space-x-3">
-          {isLocked && (
-            <Badge variant="outline" className="h-9 px-4 rounded-xl text-xs font-bold text-amber-600 border-amber-200 bg-amber-50">
-              <Lock className="w-3 h-3 mr-1.5" /> Document verrouillé
-            </Badge>
-          )}
-          {!isLocked && (
+          {formData.status === 'brouillon' && (
             <Badge variant="outline" className="h-9 px-4 rounded-xl text-xs font-bold text-slate-400 border-slate-200">
               Brouillon
             </Badge>
@@ -301,101 +411,32 @@ export default function InvoiceBuilder({ initialData, isEdit = false }: Props) {
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
         {/* LEFT: FORM (3 cols) */}
         <section className="lg:col-span-3 space-y-6">
-          {/* CLIENT */}
-          <Card className="border border-slate-100 rounded-2xl shadow-sm">
-            <CardHeader className="p-6 pb-4 flex flex-row justify-between items-center">
-              <CardTitle className="text-sm font-bold text-slate-900">Partenaire</CardTitle>
-              <Popover open={openClientSearch} onOpenChange={setOpenClientSearch}>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm" className="rounded-xl text-xs font-bold h-9" disabled={isLocked}>
-                    <PlusCircle className="w-3.5 h-3.5 mr-2" />
-                    {selectedClient ? 'Changer' : 'Sélectionner'}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[350px] p-0 rounded-xl shadow-lg border-slate-200" align="end">
-                  <Command>
-                    <CommandInput className="text-sm" placeholder="Rechercher un partenaire..." />
-                    <CommandList className="max-h-[250px]">
-                      <CommandEmpty className="py-8 text-center text-sm text-muted-foreground">Aucun partenaire trouvé</CommandEmpty>
-                      <CommandGroup>
-                        {clients.map(client => (
-                          <CommandItem key={client.id} onSelect={() => selectClient(client)} className="p-3 cursor-pointer">
-                            <div className="flex flex-col">
-                              <span className="text-sm font-bold text-slate-900">{client.name}</span>
-                              {client.email && <span className="text-xs text-muted-foreground">{client.email}</span>}
-                            </div>
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-            </CardHeader>
-            <CardContent className="p-6 pt-0 space-y-4">
-              {selectedClient ? (
-                <div className="bg-slate-50 rounded-xl p-4 space-y-1 relative group">
-                  <p className="text-sm font-bold text-slate-900">{selectedClient.name}</p>
-                  {selectedClient.email && <p className="text-xs text-muted-foreground">{selectedClient.email}</p>}
-                  {selectedClient.company_ice && <p className="text-[10px] font-black text-indigo-500 uppercase">ICE: {selectedClient.company_ice}</p>}
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="absolute top-2 right-2 w-7 h-7 opacity-0 group-hover:opacity-100 transition-all text-slate-400 hover:text-slate-900"
-                    onClick={() => { setSelectedClient(null); setFormData(p => ({ ...p, client_id: undefined })); }}
-                  >
-                    <Plus className="w-4 h-4 rotate-45" />
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <div className="space-y-1">
-                    <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nom de l'établissement / Partenaire</Label>
-                    <Input 
-                      value={formData.recipient_name || ''} 
-                      onChange={e => setFormData({ ...formData, recipient_name: e.target.value })}
-                      className="bg-slate-50 border-slate-200 h-10 rounded-lg text-sm"
-                      placeholder="Saisir manuellement ou choisir ci-dessus..."
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">N° ICE</Label>
-                      <Input 
-                        value={formData.recipient_ice || ''} 
-                        onChange={e => setFormData({ ...formData, recipient_ice: e.target.value })}
-                        className="bg-slate-50 border-slate-200 h-10 rounded-lg text-sm"
-                        placeholder="Ex: 001234..."
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Adresse (facultatif)</Label>
-                      <Input 
-                        value={formData.recipient_address || ''} 
-                        onChange={e => setFormData({ ...formData, recipient_address: e.target.value })}
-                        className="bg-slate-50 border-slate-200 h-10 rounded-lg text-sm"
-                        placeholder="Ville..."
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          {/* CLIENT SECTION */}
+          {renderClientSection()}
 
           {/* DATES */}
           <Card className="border border-slate-100 rounded-2xl shadow-sm">
             <CardContent className="p-6">
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label className="text-xs font-bold text-slate-500">Date d'émission</Label>
-                  <input type="date" className="w-full bg-slate-50 border border-slate-200 h-11 rounded-xl px-4 text-sm font-medium focus:ring-1 focus:ring-slate-900 focus:outline-none"
-                    value={typeof formData.created_at === 'string' ? formData.created_at.split('T')[0] : ''} onChange={e => setFormData({ ...formData, created_at: e.target.value })} disabled={isLocked} />
+                  <Label className="text-xs font-bold text-slate-500">Date de création</Label>
+                  <input
+                    type="date"
+                    className="w-full bg-slate-50 border border-slate-200 h-11 rounded-xl px-4 text-sm font-medium focus:ring-1 focus:ring-slate-900 focus:outline-none"
+                    value={typeof formData.created_at === 'string' ? formData.created_at.split('T')[0] : ''}
+                    onChange={e => setFormData({ ...formData, created_at: e.target.value })}
+                    disabled={isLocked}
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs font-bold text-slate-500">Date d'échéance</Label>
-                  <input type="date" className="w-full bg-slate-50 border border-slate-200 h-11 rounded-xl px-4 text-sm font-medium focus:ring-1 focus:ring-slate-900 focus:outline-none"
-                    value={formData.due_date || ''} onChange={e => setFormData({ ...formData, due_date: e.target.value || undefined })} disabled={isLocked} />
+                  <Label className="text-xs font-bold text-slate-500">Date d'expiration</Label>
+                  <input
+                    type="date"
+                    className="w-full bg-slate-50 border border-slate-200 h-11 rounded-xl px-4 text-sm font-medium focus:ring-1 focus:ring-slate-900 focus:outline-none"
+                    value={formData.expires_at || ''}
+                    onChange={e => setFormData({ ...formData, expires_at: e.target.value || undefined })}
+                    disabled={isLocked}
+                  />
                 </div>
               </div>
             </CardContent>
@@ -407,12 +448,20 @@ export default function InvoiceBuilder({ initialData, isEdit = false }: Props) {
               <div className="flex items-center justify-between">
                 <Label className="text-xs font-bold text-slate-500">Mode de saisie des prix</Label>
                 <div className="flex items-center bg-slate-50 p-1 rounded-xl">
-                  <button type="button" disabled={isLocked} onClick={() => setFormData({ ...formData, tva_mode: 'ht' })}
-                    className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${formData.tva_mode === 'ht' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400'}`}>
+                  <button
+                    type="button"
+                    disabled={isLocked}
+                    onClick={() => setFormData({ ...formData, tva_mode: 'ht' })}
+                    className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${formData.tva_mode === 'ht' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400'}`}
+                  >
                     Hors Taxe (HT)
                   </button>
-                  <button type="button" disabled={isLocked} onClick={() => setFormData({ ...formData, tva_mode: 'ttc' })}
-                    className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${formData.tva_mode === 'ttc' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400'}`}>
+                  <button
+                    type="button"
+                    disabled={isLocked}
+                    onClick={() => setFormData({ ...formData, tva_mode: 'ttc' })}
+                    className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${formData.tva_mode === 'ttc' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400'}`}
+                  >
                     Toutes Taxes (TTC)
                   </button>
                 </div>
@@ -425,6 +474,7 @@ export default function InvoiceBuilder({ initialData, isEdit = false }: Props) {
             <CardHeader className="p-6 pb-4 flex flex-row justify-between items-center">
               <CardTitle className="text-sm font-bold text-slate-900">Prestations</CardTitle>
               <div className="flex items-center space-x-2">
+                {/* Catalog Picker */}
                 <Popover open={openCatalogPicker} onOpenChange={setOpenCatalogPicker}>
                   <PopoverTrigger asChild>
                     <Button variant="outline" size="sm" className="rounded-xl text-xs font-bold h-9" disabled={isLocked}>
@@ -452,6 +502,7 @@ export default function InvoiceBuilder({ initialData, isEdit = false }: Props) {
                     </Command>
                   </PopoverContent>
                 </Popover>
+
                 <Button variant="outline" size="sm" className="rounded-xl text-xs font-bold h-9" onClick={addEmptyItem} disabled={isLocked}>
                   <Plus className="w-3.5 h-3.5 mr-2" /> Ligne vide
                 </Button>
@@ -459,11 +510,15 @@ export default function InvoiceBuilder({ initialData, isEdit = false }: Props) {
             </CardHeader>
             <CardContent className="p-6 pt-0 space-y-3">
               {formData.items_json?.map((item, idx) => (
-                <motion.div key={idx} initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }}
-                  className="bg-slate-50/50 rounded-xl p-4 border border-slate-100 group hover:border-slate-200 transition-all">
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, y: -5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-slate-50/50 rounded-xl p-4 border border-slate-100 group hover:border-slate-200 transition-all"
+                >
                   <div className="grid grid-cols-12 gap-3 items-end">
-                    <div className="col-span-12 md:col-span-5 space-y-1">
-                      <Label className="text-[10px] font-bold text-slate-400">Description</Label>
+                    <div className="col-span-12 md:col-span-3 space-y-1">
+                      <Label className="text-[10px] font-bold text-slate-400">Désignation</Label>
                       <Input value={item.description ?? ''} onChange={e => updateItem(idx, 'description', e.target.value)}
                         className="bg-white border-slate-200 h-10 rounded-lg text-sm" placeholder="Nature de la prestation" disabled={isLocked} />
                     </div>
@@ -486,60 +541,68 @@ export default function InvoiceBuilder({ initialData, isEdit = false }: Props) {
                       <span className="text-sm font-bold text-slate-900 tabular-nums">{formatMAD(calcLineSubtotal(item.quantity, item.unit_price))}</span>
                       <Button variant="ghost" size="icon" onClick={() => removeItem(idx)} disabled={isLocked}
                         className="w-8 h-8 rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 opacity-0 group-hover:opacity-100 transition-all">
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
                 </motion.div>
               ))}
+
               {(!formData.items_json || formData.items_json.length === 0) && (
                 <p className="text-sm text-muted-foreground italic text-center py-8">Aucune prestation ajoutée</p>
               )}
             </CardContent>
           </Card>
 
-          {/* AMOUNT WORDS + NOTES */}
+          {/* NOTES */}
           <Card className="border border-slate-100 rounded-2xl shadow-sm">
-            <CardContent className="p-6 space-y-4">
-              <div className="space-y-2">
-                <Label className="text-xs font-bold text-slate-500">Montant en toutes lettres</Label>
-                <Input value={formData.amount_words || ''} onChange={e => setFormData({ ...formData, amount_words: e.target.value })}
-                  className="h-11 bg-slate-50 border-slate-200 rounded-xl text-sm italic" placeholder="Arrêté la présente facture à la somme de..." disabled={isLocked} />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs font-bold text-slate-500">Notes</Label>
-                <textarea rows={3} className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm focus:ring-1 focus:ring-slate-900 focus:outline-none"
-                  value={formData.notes || ''} onChange={e => setFormData({ ...formData, notes: e.target.value })} placeholder="Notes internes..." disabled={isLocked} />
-              </div>
+            <CardContent className="p-6 space-y-2">
+              <Label className="text-xs font-bold text-slate-500">Notes</Label>
+              <textarea
+                rows={3}
+                className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm focus:ring-1 focus:ring-slate-900 focus:outline-none"
+                value={formData.notes || ''}
+                onChange={e => setFormData({ ...formData, notes: e.target.value })}
+                placeholder="Notes internes ou instructions..."
+                disabled={isLocked}
+              />
             </CardContent>
           </Card>
         </section>
 
-        {/* RIGHT: PREVIEW (2 cols) */}
+        {/* RIGHT: LIVE PREVIEW (2 cols) */}
         <aside className="lg:col-span-2 sticky top-20">
           <Card className="border border-slate-100 rounded-2xl shadow-sm overflow-hidden">
             <div className="bg-slate-900 text-white p-4 flex items-center justify-between">
               <span className="text-xs font-bold">Aperçu en direct</span>
-              <Badge className="bg-white/10 text-white border-none text-[10px] font-bold rounded-lg">FACTURE</Badge>
+              <Badge className="bg-white/10 text-white border-none text-[10px] font-bold rounded-lg">PROFORMA</Badge>
             </div>
+
+            {/* Mini A4 preview */}
             <div className="p-6 bg-white">
               <div className="border border-slate-100 rounded-xl p-6 space-y-5 text-[11px]">
+                {/* Header */}
                 <div className="flex justify-between items-start">
                   <div>
-                    <p className="font-black text-sm text-slate-900">{formData.invoice_number}</p>
-                    <p className="text-muted-foreground mt-0.5">FACTURE</p>
+                    <p className="font-black text-sm text-slate-900">{formData.proforma_number}</p>
+                    <p className="text-muted-foreground mt-0.5">PROFORMA</p>
                   </div>
-                  <div className="text-right text-muted-foreground">
-                    <p>{formData.created_at ? format(new Date(formData.created_at), 'dd/MM/yyyy') : '-'}</p>
-                    {formData.due_date && <p>Échéance: {format(new Date(formData.due_date), 'dd/MM/yyyy')}</p>}
+                  <div className="text-right">
+                    <p className="text-muted-foreground">{formData.created_at ? format(new Date(formData.created_at), 'dd/MM/yyyy') : '-'}</p>
                   </div>
                 </div>
+
                 <Separator />
+
+                {/* Client */}
                 <div>
                   <p className="font-bold text-slate-900">{selectedClient?.name || '—'}</p>
                   {selectedClient?.email && <p className="text-muted-foreground">{selectedClient.email}</p>}
                 </div>
+
                 <Separator />
+
+                {/* Items */}
                 <div className="space-y-2">
                   <div className="grid grid-cols-12 font-bold text-muted-foreground border-b border-slate-100 pb-2">
                     <span className="col-span-6">Description</span>
@@ -556,20 +619,36 @@ export default function InvoiceBuilder({ initialData, isEdit = false }: Props) {
                     </div>
                   ))}
                 </div>
+
                 <Separator />
+
+                {/* Totals */}
                 <div className="space-y-2 text-right">
-                  <div className="flex justify-between"><span className="text-muted-foreground">Sous-total HT</span><span className="font-bold tabular-nums">{formatMAD(totals.subtotal_ht)} MAD</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">TVA (10%)</span><span className="font-bold tabular-nums">{formatMAD(totals.tva_amount)} MAD</span></div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Sous-total HT</span>
+                    <span className="font-bold tabular-nums">{formatMAD(totals.subtotal_ht)} MAD</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">TVA (10%)</span>
+                    <span className="font-bold tabular-nums">{formatMAD(totals.tva_amount)} MAD</span>
+                  </div>
                   <div className="flex justify-between text-base bg-slate-900 text-white rounded-xl p-4 -mx-2">
-                    <span className="font-bold">Total TTC</span><span className="font-black tabular-nums">{formatMAD(totals.total_ttc)} MAD</span>
+                    <span className="font-bold">Total TTC</span>
+                    <span className="font-black tabular-nums">{formatMAD(totals.total_ttc)} MAD</span>
                   </div>
                 </div>
               </div>
             </div>
+
+            {/* Bottom action */}
             <div className="p-4 border-t border-slate-100 bg-slate-50">
-              <Button onClick={handleSave} disabled={saving || isLocked} className="w-full h-11 bg-slate-900 hover:bg-orange-600 text-white rounded-xl text-xs font-bold transition-all">
+              <Button
+                onClick={handleSave}
+                disabled={saving || isLocked}
+                className="w-full h-11 bg-slate-900 hover:bg-orange-600 text-white rounded-xl text-xs font-bold transition-all"
+              >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
-                Enregistrer la facture
+                Enregistrer le proforma
               </Button>
             </div>
           </Card>

@@ -18,12 +18,12 @@ import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
 const menuItems = [
-  { href: '/', label: 'Overview', icon: LayoutDashboard },
-  { href: '/invoices', label: 'Documents', icon: FileText },
+  { href: '/', label: 'Tableau de bord', icon: LayoutDashboard },
+  { href: '/f-commercial', label: 'Documents', icon: FileText },
   { href: '/clients', label: 'Clients', icon: Users },
-  { href: '/analytics', label: 'Insights', icon: BarChart3 },
-  { href: '/trash', label: 'Archive', icon: Trash2 },
-  { href: '/settings', label: 'Configure', icon: Settings },
+  { href: '/analytics', label: 'Statistiques', icon: BarChart3 },
+  { href: '/trash', label: 'Archives', icon: Trash2 },
+  { href: '/settings', label: 'Paramètres', icon: Settings },
 ];
 
 export default function Sidebar() {
@@ -72,7 +72,7 @@ export default function Sidebar() {
 
         <div className="mt-8 pt-8 border-t border-white/5">
           <Link 
-            href="/invoice/new" 
+            href="/facture-commerciale/new" 
             className="w-full bg-orange-600 border border-orange-400 hover:bg-orange-700 text-white rounded-2xl py-4 flex items-center justify-center space-x-3 transition-all duration-500 shadow-[0_20px_40px_-10px_rgba(249,115,22,0.3)] group overflow-hidden relative"
           >
             <div className="absolute inset-0 bg-white/20 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 skew-x-12"></div>
