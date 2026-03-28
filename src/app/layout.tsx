@@ -6,6 +6,7 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import AuthGuard from "@/components/auth-guard";
 
 
 const geist = Geist({ subsets: ['latin'], variable: '--font-sans' });
@@ -25,27 +26,29 @@ export default function RootLayout({
     <html lang="fr" className={cn("h-full font-sans antialiased text-slate-900 overflow-x-hidden selection:bg-orange-600 selection:text-white", "font-sans", geist.variable)}>
       <body className={`${inter.className} min-h-screen flex text-slate-900 bg-background`}>
         <TooltipProvider>
-          <SidebarProvider>
-            <AppSidebar />
-            <SidebarInset className="bg-slate-50/10">
-              {/* HEADER */}
-              <header className="h-14 flex items-center no-print z-40 sticky top-0 bg-white/80 backdrop-blur-xl border-b border-sidebar-border px-6">
-                <div className="flex items-center space-x-4">
-                  <SidebarTrigger className="-ml-1" />
-                  <Separator orientation="vertical" className="h-4 mr-2" />
-                  <span className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em]">Bassatine Facturation</span>
+          <AuthGuard>
+            <SidebarProvider>
+              <AppSidebar />
+              <SidebarInset className="bg-slate-50/10">
+                {/* HEADER */}
+                <header className="h-14 flex items-center no-print z-40 sticky top-0 bg-white/80 backdrop-blur-xl border-b border-sidebar-border px-6">
+                  <div className="flex items-center space-x-4">
+                    <SidebarTrigger className="-ml-1" />
+                    <Separator orientation="vertical" className="h-4 mr-2" />
+                    <span className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em]">Bassatine Facturation</span>
+                  </div>
+                </header>
+
+                {/* PAGE CONTENT */}
+                <div className="flex-1 py-8 px-6 relative pointer-events-auto max-w-[1600px] mx-auto w-full">
+                  {children}
                 </div>
-              </header>
 
-              {/* PAGE CONTENT */}
-              <div className="flex-1 py-8 px-6 relative pointer-events-auto max-w-[1600px] mx-auto w-full">
-                {children}
-              </div>
-
-              {/* BACKGROUND DECORATION */}
-              <div className="no-print fixed top-[-100px] right-[-100px] w-96 h-96 bg-orange-100/5 blur-[150px] pointer-events-none select-none z-[-1]" />
-            </SidebarInset>
-          </SidebarProvider>
+                {/* BACKGROUND DECORATION */}
+                <div className="no-print fixed top-[-100px] right-[-100px] w-96 h-96 bg-orange-100/5 blur-[150px] pointer-events-none select-none z-[-1]" />
+              </SidebarInset>
+            </SidebarProvider>
+          </AuthGuard>
         </TooltipProvider>
       </body>
     </html>
