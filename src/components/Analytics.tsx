@@ -12,20 +12,20 @@ interface Props {
 
 export default function Analytics({ invoices }: Props) {
   const stats = useMemo(() => {
-    const activeInvoices = invoices.filter(inv => !inv.is_trashed && inv.invoice_type === 'commercial');
+    const activeInvoices = invoices.filter(inv => inv.status !== 'brouillon'); // Filter out drafts for analytics
     const now = new Date();
     const currentMonthStart = startOfMonth(now);
     const lastMonthStart = startOfMonth(subMonths(now, 1));
 
-    const currentMonthInvoices = activeInvoices.filter(inv => isSameMonth(new Date(inv.invoice_date), currentMonthStart));
-    const lastMonthInvoices = activeInvoices.filter(inv => isSameMonth(new Date(inv.invoice_date), lastMonthStart));
+    const currentMonthInvoices = activeInvoices.filter(inv => isSameMonth(new Date(inv.created_at), currentMonthStart));
+    const lastMonthInvoices = activeInvoices.filter(inv => isSameMonth(new Date(inv.created_at), lastMonthStart));
 
-    const currentRevenue = currentMonthInvoices.reduce((acc, inv) => acc + Number(inv.grand_total_ttc), 0);
-    const lastRevenue = lastMonthInvoices.reduce((acc, inv) => acc + Number(inv.grand_total_ttc), 0);
-    const currentVat = currentMonthInvoices.reduce((acc, inv) => acc + Number(inv.tax_total), 0);
+    const currentRevenue = currentMonthInvoices.reduce((acc, inv) => acc + Number(inv.total_ttc), 0);
+    const lastRevenue = lastMonthInvoices.reduce((acc, inv) => acc + Number(inv.total_ttc), 0);
+    const currentVat = currentMonthInvoices.reduce((acc, inv) => acc + Number(inv.tva_amount), 0);
 
     const growth = lastRevenue > 0 ? ((currentRevenue - lastRevenue) / lastRevenue) * 100 : 0;
-    const pendingAmount = activeInvoices.filter(i => i.invoice_status === 'sent' || i.invoice_status === 'overdue').reduce((acc, i) => acc + Number(i.grand_total_ttc), 0);
+    const pendingAmount = activeInvoices.filter(i => i.status === 'envoyée' || i.status === 'en_retard').reduce((acc, i) => acc + Number(i.total_ttc), 0);
 
     return {
       revenue: currentRevenue,
@@ -33,7 +33,7 @@ export default function Analytics({ invoices }: Props) {
       growth: growth.toFixed(1),
       pending: pendingAmount,
       totalCount: activeInvoices.length,
-      paidRatio: Math.round((activeInvoices.filter(i => i.invoice_status === 'paid').length / activeInvoices.length) * 100) || 0,
+      paidRatio: Math.round((activeInvoices.filter(i => i.status === 'payée').length / activeInvoices.length) * 100) || 0,
     };
   }, [invoices]);
 

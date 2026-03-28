@@ -41,11 +41,10 @@ export default function RevenueChart({ invoices }: Props) {
     const labels = months.map(m => format(m, 'MMM'));
     const data = months.map(month => {
       const monthInvoices = invoices.filter(inv => 
-        !inv.is_trashed && 
-        inv.invoice_type === 'commercial' &&
-        isSameMonth(new Date(inv.invoice_date), month)
+        inv.status !== 'brouillon' && 
+        isSameMonth(new Date(inv.created_at), month)
       );
-      return monthInvoices.reduce((acc, inv) => acc + Number(inv.grand_total_ttc), 0);
+      return monthInvoices.reduce((acc, inv) => acc + Number(inv.total_ttc), 0);
     });
 
     return {
