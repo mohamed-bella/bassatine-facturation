@@ -253,7 +253,8 @@ export default function ViewProformaPage() {
 
     const { data: numData } = await supabase.from('invoices').select('invoice_number');
     const { generateNextNumber } = await import('@/lib/calculations');
-    const nextInvNum = generateNextNumber('INV', (numData || []).map((x: any) => x.invoice_number));
+    const currentYear = new Date().getFullYear().toString();
+    const nextInvNum = generateNextNumber(currentYear, (numData || []).map((x: any) => x.invoice_number), '/', 3);
 
     const { data: newInvoice, error } = await supabase.from('invoices').insert([{
       invoice_number: nextInvNum,

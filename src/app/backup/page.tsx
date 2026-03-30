@@ -23,63 +23,326 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 
-const GOOGLE_APPS_SCRIPT = `/**
- * Google Apps Script for BASSATINE FACTURATION Sync
- * ------------------------------------------------
- * This script pulls data from your Supabase DB into this Spreadsheet.
- * 1. Open Google Sheets
- * 2. Extensions > Apps Script
- * 3. Paste this code and save.
- * 4. Run the 'syncFromSupabase' function.
- */
+const GOOGLE_APPS_SCRIPT = `// ============================================================
+// BASSATINE SKOURA — Supabase Sync + Facture Generator
+// ============================================================
+// SETUP:
+//   1. Open Google Sheets → Extensions → Apps Script
+//   2. Paste this entire script and Save
+//   3. Run syncFromSupabase() to pull your data
+//   4. Use the "BASSATINE" menu to generate invoices
+// ============================================================
 
 const SUPABASE_URL = "YOUR_SUPABASE_URL";
 const SUPABASE_KEY = "YOUR_SUPABASE_ANON_KEY";
 
+const TABLE_COLORS = {
+  header_bg:   "#1e293b",
+  header_fg:   "#ffffff",
+  even_bg:     "#f8fafc",
+  odd_bg:      "#ffffff",
+  border:      "#e2e8f0",
+  accent:      "#f97316",
+};
+
 const TABLES = ["clients", "invoices", "proformas", "payments", "product_catalog"];
+
+function syncTable_(ss, tableName) {
+  const url = SUPABASE_URL + "/rest/v1/" + tableName + "?select=*&order=created_at.desc";
+  const options = {
+    method: "get",
+    headers: { "apikey": SUPABASE_KEY, "Authorization": "Bearer " + SUPABASE_KEY }
+  };
+
+  const response = UrlFetchApp.fetch(url, options);
+  const data = JSON.parse(response.getContentText());
+
+  let sheet = ss.getSheetByName(tableName);
+  if (!sheet) sheet = ss.insertSheet(tableName);
+  else sheet.clear();
+
+  if (!data || data.length === 0) {
+    sheet.getRange(1, 1).setValue("Aucune donnée");
+    return;
+  }
+
+  const headers = Object.keys(data[0]);
+  const rows = data.map(function(item) {
+    return headers.map(function(h) {
+      const val = item[h];
+      if (val === null || val === undefined) return "";
+      return (typeof val === "object") ? JSON.stringify(val) : val;
+    });
+  });
+
+  const headerRange = sheet.getRange(1, 1, 1, headers.length);
+  headerRange.setValues([headers.map(function(h) {
+    return h.toUpperCase().replace(/_/g, " ");
+  })]);
+  headerRange.setFontWeight("bold")
+             .setFontColor(TABLE_COLORS.header_fg)
+             .setBackground(TABLE_COLORS.header_bg)
+             .setHorizontalAlignment("center")
+             .setBorder(true, true, true, true, true, true, TABLE_COLORS.border, SpreadsheetApp.BorderStyle.SOLID);
+
+  const dataRange = sheet.getRange(2, 1, rows.length, headers.length);
+  dataRange.setValues(rows);
+
+  for (let r = 2; r <= rows.length + 1; r++) {
+    const rowRange = sheet.getRange(r, 1, 1, headers.length);
+    rowRange.setBackground(r % 2 === 0 ? TABLE_COLORS.even_bg : TABLE_COLORS.odd_bg);
+    rowRange.setBorder(false, false, true, false, false, false, TABLE_COLORS.border, SpreadsheetApp.BorderStyle.SOLID_THIN);
+  }
+
+  dataRange.setFontFamily("Arial").setFontSize(10).setVerticalAlignment("middle");
+
+  for (let c = 1; c <= headers.length; c++) {
+    sheet.autoResizeColumn(c);
+    const currentWidth = sheet.getColumnWidth(c);
+    sheet.setColumnWidth(c, Math.max(currentWidth + 10, 80));
+  }
+
+  sheet.setFrozenRows(1);
+  sheet.setRowHeight(1, 32);
+
+  headers.forEach(function(h, i) {
+    const col = i + 1;
+    if (h.includes("total") || h.includes("amount") || h.includes("price") ||
+        h.includes("_ht") || h.includes("_ttc") || h.includes("subtotal")) {
+      if (rows.length > 0) sheet.getRange(2, col, rows.length).setNumberFormat('#,##0.00 "DH"');
+    }
+    if (h === "created_at" || h === "updated_at" || h === "payment_date" || h === "due_date") {
+      if (rows.length > 0) sheet.getRange(2, col, rows.length).setNumberFormat("dd/MM/yyyy");
+    }
+  });
+
+  sheet.setTabColor(TABLE_COLORS.accent);
+}
 
 function syncFromSupabase() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  
-  TABLES.forEach(tableName => {
-    try {
-      const url = \`\${SUPABASE_URL}/rest/v1/\${tableName}?select=*\`;
-      const options = {
-        method: "get",
-        headers: {
-          "apikey": SUPABASE_KEY,
-          "Authorization": "Bearer " + SUPABASE_KEY
-        }
-      };
-      
-      const response = UrlFetchApp.fetch(url, options);
-      const data = JSON.parse(response.getContentText());
-      
-      if (data && data.length > 0) {
-        let sheet = ss.getSheetByName(tableName);
-        if (!sheet) {
-          sheet = ss.insertSheet(tableName);
-        } else {
-          sheet.clear();
-        }
-        
-        const headers = Object.keys(data[0]);
-        const rows = data.map(item => headers.map(h => {
-          const val = item[h];
-          return (typeof val === 'object' && val !== null) ? JSON.stringify(val) : val;
-        }));
-        
-        sheet.getRange(1, 1, 1, headers.length).setValues([headers]).setFontWeight("bold").setBackground("#f3f4f6");
-        sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
-        sheet.setFrozenRows(1);
-      }
-    } catch (e) {
-      Logger.log("Error syncing " + tableName + ": " + e.message);
-    }
+  ss.toast("Synchronisation en cours...", "BASSATINE", -1);
+
+  TABLES.forEach(function(tableName) {
+    try { syncTable_(ss, tableName); } 
+    catch (e) { Logger.log("Erreur sur " + tableName + " : " + e.message); }
   });
+
+  setupGeneratorSheet_(ss);
+  ss.setActiveSheet(ss.getSheetByName("⚡ Générateur") || ss.getSheets()[0]);
+  ss.toast("Terminé ! Utilisez le menu BASSATINE.", "✅ Sync OK", 5);
+}
+
+function setupGeneratorSheet_(ss) {
+  const SHEET_NAME = "⚡ Générateur";
+  let sheet = ss.getSheetByName(SHEET_NAME);
+  if (sheet) sheet.clear();
+  else sheet = ss.insertSheet(SHEET_NAME, 0);
+
+  sheet.setTabColor("#f97316");
+
+  sheet.getRange("A1:G1").merge()
+    .setValue("BASSATINE SKOURA — Générateur de Facture / Proforma")
+    .setFontSize(16).setFontWeight("bold").setFontColor("#ffffff")
+    .setBackground("#1e293b").setHorizontalAlignment("center");
+  sheet.setRowHeight(1, 40);
+
+  sheet.getRange("A3").setValue("TYPE DE DOCUMENT :")
+    .setFontWeight("bold").setFontColor("#64748b").setFontSize(10);
+  const typeCell = sheet.getRange("B3");
+  typeCell.setValue("FACTURE PROFORMA").setFontWeight("bold").setFontSize(12)
+    .setBackground("#fff7ed").setFontColor("#f97316");
+  const rule = SpreadsheetApp.newDataValidation()
+    .requireValueInList(["FACTURE PROFORMA", "FACTURE COMMERCIALE"], true).build();
+  typeCell.setDataValidation(rule);
+
+  sheet.getRange("A5:G5").merge().setValue("📋  INFORMATIONS CLIENT")
+    .setFontWeight("bold").setFontColor("#ffffff").setBackground("#334155")
+    .setFontSize(11).setHorizontalAlignment("left");
+  sheet.setRowHeight(5, 30);
+
+  const clientFields = [
+    ["Nom / Raison Sociale :", "B6"],
+    ["ICE :", "B7"],
+    ["Adresse :", "B8"],
+    ["Date du document :", "B9"],
+  ];
+  clientFields.forEach(function(field) {
+    sheet.getRange("A" + field[1].charAt(1)).setValue(field[0])
+      .setFontWeight("bold").setFontColor("#475569").setFontSize(10);
+    sheet.getRange(field[1]).setBackground("#f8fafc")
+      .setBorder(false, false, true, false, false, false, "#cbd5e1", SpreadsheetApp.BorderStyle.SOLID);
+  });
+  sheet.getRange("B9").setValue(Utilities.formatDate(new Date(), "Africa/Casablanca", "dd/MM/yyyy"));
+
+  sheet.getRange("A11:G11").merge().setValue("📦  LIGNES DE FACTURATION")
+    .setFontWeight("bold").setFontColor("#ffffff").setBackground("#334155")
+    .setFontSize(11).setHorizontalAlignment("left");
+  sheet.setRowHeight(11, 30);
+
+  const colHeaders = ["DÉSIGNATION", "NB CHAMBRES", "NB CLIENTS", "PRIX UNITAIRE (DH)", "TOTAL TTC"];
+  const colCols    = [1, 2, 3, 4, 5];
+  const colWidths  = [280, 120, 110, 160, 140];
+  colHeaders.forEach(function(h, i) {
+    const cell = sheet.getRange(12, colCols[i]);
+    cell.setValue(h).setFontWeight("bold").setFontColor("#ffffff")
+      .setBackground("#1e293b").setHorizontalAlignment("center")
+      .setFontSize(9);
+    sheet.setColumnWidth(colCols[i], colWidths[i]);
+  });
+  sheet.setRowHeight(12, 28);
+
+  for (let r = 13; r <= 20; r++) {
+    const bg = (r % 2 === 0) ? "#f8fafc" : "#ffffff";
+    sheet.getRange(r, 1).setBackground(bg);
+    sheet.getRange(r, 2).setBackground(bg).setHorizontalAlignment("center").setNumberFormat("0");
+    sheet.getRange(r, 3).setBackground(bg).setHorizontalAlignment("center").setNumberFormat("0");
+    sheet.getRange(r, 4).setBackground(bg).setHorizontalAlignment("right").setNumberFormat('#,##0.00 "DH"');
+    sheet.getRange(r, 5).setFormula("=IF(B" + r + "*D" + r + "=0,\\"\\",B" + r + "*D" + r + ")")
+      .setBackground(bg).setHorizontalAlignment("right")
+      .setNumberFormat('#,##0.00 "DH"').setFontWeight("bold");
+    sheet.setRowHeight(r, 26);
+  }
+
+  sheet.getRange("A22:G22").merge().setValue("").setBackground("#f1f5f9");
+
+  const totalsData = [
+    ["TOTAL HT :", "=SUMPRODUCT((B13:B20*D13:D20)/1.1)"],
+    ["TVA 10% :", "=SUMPRODUCT((B13:B20*D13:D20)/1.1*0.1)"],
+    ["TOTAL TTC :", "=SUMPRODUCT(B13:B20*D13:D20)"],
+  ];
+  totalsData.forEach(function(row, i) {
+    const r = 23 + i;
+    sheet.getRange(r, 4).setValue(row[0]).setFontWeight("bold")
+      .setHorizontalAlignment("right").setFontColor("#475569").setFontSize(10);
+    sheet.getRange(r, 5).setFormula(row[1]).setFontWeight("bold")
+      .setNumberFormat('#,##0.00 "DH"').setHorizontalAlignment("right")
+      .setBackground(i === 2 ? "#1e293b" : "#f8fafc")
+      .setFontColor(i === 2 ? "#ffffff" : "#0f172a").setFontSize(i === 2 ? 13 : 10);
+    if (i === 2) sheet.setRowHeight(r, 32);
+  });
+
+  sheet.getRange("A27").setValue("📝  NOTES / CONDITIONS")
+    .setFontWeight("bold").setFontColor("#64748b").setFontSize(10);
+  sheet.getRange("A28:G29").merge().setBackground("#f8fafc")
+    .setBorder(true, true, true, true, false, false, "#e2e8f0", SpreadsheetApp.BorderStyle.SOLID);
+
+  sheet.getRange("A31:G31").merge()
+    .setValue("⬇  Utilisez le menu BASSATINE → Enregistrer dans Supabase pour sauvegarder.")
+    .setFontStyle("italic").setFontColor("#94a3b8").setFontSize(9)
+    .setHorizontalAlignment("center").setBackground("#f8fafc");
+
+  sheet.setColumnWidth(6, 20);
+  sheet.setColumnWidth(7, 20);
+  sheet.hideColumns(6, 2);
+}
+
+function getNextDocNumber(ss, tableName, numField, currentYear) {
+  let max = 0;
+  const sheet = ss.getSheetByName(tableName);
+  if (sheet) {
+    const data = sheet.getDataRange().getValues();
+    if (data.length > 0) {
+      const colIdx = data[0].indexOf(numField);
+      if (colIdx >= 0) {
+        for (let i = 1; i < data.length; i++) {
+          const val = data[i][colIdx];
+          if (typeof val === 'string' && val.startsWith(currentYear + "/")) {
+            const parts = val.split("/");
+            if (parts.length === 2) {
+              const num = parseInt(parts[1], 10);
+              if (!isNaN(num) && num > max) max = num;
+            }
+          }
+        }
+      }
+    }
+  }
+  let generated = max + 1;
+  return currentYear + "/" + (generated < 10 ? '0' + generated : generated);
+}
+
+function saveToSupabase() {
+  const ss  = SpreadsheetApp.getActiveSpreadsheet();
+  const sh  = ss.getSheetByName("⚡ Générateur");
+  if (!sh) { Browser.msgBox("Feuille Générateur introuvable."); return; }
+
+  const docType   = sh.getRange("B3").getValue();
+  const clientName= sh.getRange("B6").getValue();
+  const ice       = sh.getRange("B7").getValue();
+  const address   = sh.getRange("B8").getValue();
+  const notes     = sh.getRange("A28").getValue();
+
+  const items = [];
+  let totalTtc = 0;
+  for (let r = 13; r <= 20; r++) {
+    const desc  = sh.getRange(r, 1).getValue();
+    const qty   = Number(sh.getRange(r, 2).getValue()) || 0;
+    const nbCl  = Number(sh.getRange(r, 3).getValue()) || 0;
+    const price = Number(sh.getRange(r, 4).getValue()) || 0;
+    if (!desc && qty === 0) continue;
+    const subtotal = qty * price;
+    totalTtc += subtotal;
+    items.push({ description: String(desc), quantity: qty, nb_clients: nbCl, unit_price: price, subtotal: subtotal });
+  }
+
+  if (items.length === 0) { Browser.msgBox("Ajoutez au moins une ligne."); return; }
+
+  const tvaAmount   = Math.round((totalTtc / 1.1 * 0.1) * 100) / 100;
+  const subtotalHt  = Math.round((totalTtc / 1.1) * 100) / 100;
+  const now         = new Date().toISOString();
   
-  Browser.msgBox("Synchronisation terminée ! Vos données sont à jour.");
-}`;
+  const currentYear = new Date().getFullYear().toString();
+  const table       = docType === "FACTURE COMMERCIALE" ? "invoices" : "proformas";
+  const numField    = docType === "FACTURE COMMERCIALE" ? "invoice_number" : "proforma_number";
+  
+  const docNumber   = getNextDocNumber(ss, table, numField, currentYear);
+
+  const payload = {};
+  payload[numField]            = docNumber;
+  payload["recipient_name"]    = clientName;
+  payload["recipient_ice"]     = ice;
+  payload["recipient_address"] = address;
+  payload["status"]            = "brouillon";
+  payload["items_json"]        = items;
+  payload["tva_mode"]          = "ttc";
+  payload["subtotal_ht"]       = subtotalHt;
+  payload["tva_amount"]        = tvaAmount;
+  payload["total_ttc"]         = totalTtc;
+  payload["notes"]             = notes;
+  payload["created_at"]        = now;
+  payload["updated_at"]        = now;
+
+  const options = {
+    method: "post",
+    contentType: "application/json",
+    headers: {
+      "apikey": SUPABASE_KEY,
+      "Authorization": "Bearer " + SUPABASE_KEY,
+      "Prefer": "return=representation"
+    },
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
+  };
+
+  const res = UrlFetchApp.fetch(SUPABASE_URL + "/rest/v1/" + table, options);
+  if (res.getResponseCode() === 201) {
+    Browser.msgBox("✅ " + docType + " enregistrée avec succès !\\nNuméro : " + docNumber);
+    syncFromSupabase();
+  } else {
+    Browser.msgBox("❌ Erreur : " + res.getContentText());
+  }
+}
+
+function onOpen() {
+  SpreadsheetApp.getUi()
+    .createMenu("⚡ BASSATINE")
+    .addItem("🔄 Synchroniser depuis Supabase", "syncFromSupabase")
+    .addSeparator()
+    .addItem("💾 Enregistrer dans Supabase", "saveToSupabase")
+    .addToUi();
+}
+`;
 
 const TABLES_CONFIG = [
   { id: 'clients', label: 'Liste des Partenaires', icon: <Table className="w-4 h-4" /> },

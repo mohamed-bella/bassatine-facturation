@@ -171,7 +171,9 @@ export default function ProformasPage() {
                     <TableCell className="py-4 px-6">
                       <div className="flex flex-col">
                         <Link href={`/proforma/${p.id}/view`} className="text-sm font-bold text-slate-900 hover:text-orange-600 transition-colors">
-                          {p.proforma_number}
+                          {p.proforma_number?.startsWith('FAC-PROFORMA-') 
+                            ? `${p.created_at ? format(parseISO(p.created_at as string), 'yyyy') : ''}/${p.proforma_number.replace('FAC-PROFORMA-', '').replace(/^0+/, '').padStart(3, '0')}`
+                            : p.proforma_number}
                         </Link>
                         <span className="text-xs text-muted-foreground mt-0.5 flex items-center">
                           <Clock className="w-3 h-3 mr-1" />

@@ -46,9 +46,11 @@ const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
 
 // Emits exactly the invoice PDF layout from the template
 function InvoicePrintDoc({ invoice, client, settings }: { invoice: Invoice; client: Client | null; settings: Settings | null }) {
-  const isCommercial = !invoice.invoice_number?.startsWith('FAC-PROFORMA') && !/^\d{4}\//.test(invoice.invoice_number || '');
-  const docTitle = isCommercial ? 'FACTURE COMMERCIALE' : 'FACTURE PROFORMA';
-  const docNum = invoice.invoice_number;
+  const docTitle = 'FACTURE COMMERCIALE';
+  const rawNum = invoice.invoice_number || '';
+  const docNum = rawNum.startsWith('FACTURE-COMMERCIAL-') 
+    ? rawNum.replace('FACTURE-COMMERCIAL-', `${new Date(invoice.created_at || new Date()).getFullYear()}/`)
+    : rawNum;
   const dateStr = invoice.created_at ? format(parseISO(invoice.created_at as string), 'dd/MM/yyyy') : '';
 
   const totalTtc = Number(invoice.total_ttc || 0);
@@ -204,7 +206,7 @@ function InvoicePrintDoc({ invoice, client, settings }: { invoice: Invoice; clie
       </div>
 
       {/* ─── STAMP (Commercial only) ─────────────────────────── */}
-      {isCommercial && s?.stamp_url && (
+      {s?.stamp_url && (
         <div style={{
           position: 'absolute',
           bottom: '35mm',
@@ -301,7 +303,8 @@ export default function ViewInvoicePage() {
 
     const { data: payNums } = await supabase.from('payments').select('payment_number');
     const { generateNextNumber } = await import('@/lib/calculations');
-    const nextPayNum = generateNextNumber('PAY', (payNums || []).map((p: any) => p.payment_number));
+    const currentYear = new Date().getFullYear().toString();
+    const nextPayNum = generateNextNumber(currentYear, (payNums || []).map((p: any) => p.payment_number), '/', 3);
 
     const { error } = await supabase.from('payments').insert([{
       payment_number: nextPayNum,
@@ -414,7 +417,11 @@ export default function ViewInvoicePage() {
               <ChevronLeft className="w-4 h-4" />
             </Button>
             <div>
-              <h2 className="text-2xl font-black tracking-tight text-slate-900">{invoice.invoice_number}</h2>
+              <h2 className="text-2xl font-black tracking-tight text-slate-900">
+                {invoice.invoice_number?.startsWith('FACTURE-COMMERCIAL-') 
+                  ? invoice.invoice_number.replace('FACTURE-COMMERCIAL-', `${new Date(invoice.created_at || new Date()).getFullYear()}/`)
+                  : invoice.invoice_number}
+              </h2>
               <p className="text-xs text-muted-foreground mt-0.5">Facture Commerciale</p>
             </div>
           </div>
@@ -556,7 +563,7 @@ export default function ViewInvoicePage() {
                   <p className="text-[10px] font-bold text-slate-400 uppercase leading-none mb-1">Proforma source</p>
                   <p className="text-xs font-bold text-slate-900">
                     {proforma.proforma_number?.startsWith('FAC-PROFORMA-') 
-                      ? `${proforma.created_at ? format(parseISO(proforma.created_at as string), 'yyyy') : ''}/${proforma.proforma_number.replace('FAC-PROFORMA-', '').replace(/^0+/, '').padStart(2, '0')}`
+                      ? `${proforma.created_at ? format(parseISO(proforma.created_at as string), 'yyyy') : ''}/${proforma.proforma_number.replace('FAC-PROFORMA-', '').replace(/^0+/, '').padStart(3, '0')}`
                       : proforma.proforma_number}
                   </p>
                 </div>

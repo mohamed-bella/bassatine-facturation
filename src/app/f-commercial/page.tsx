@@ -203,7 +203,9 @@ export default function InvoicesPage() {
                     <TableCell className="py-4 px-6">
                       <div className="flex flex-col">
                         <Link href={`/facture-commerciale/${inv.id}/view`} className="text-sm font-bold text-slate-900 hover:text-orange-600 transition-colors">
-                          {inv.invoice_number}
+                          {inv.invoice_number?.startsWith('FACTURE-COMMERCIAL-') 
+                            ? inv.invoice_number.replace('FACTURE-COMMERCIAL-', `${new Date(inv.created_at || new Date()).getFullYear()}/`)
+                            : inv.invoice_number}
                         </Link>
                         <span className="text-xs text-muted-foreground mt-0.5 flex items-center">
                           <Clock className="w-3 h-3 mr-1" />

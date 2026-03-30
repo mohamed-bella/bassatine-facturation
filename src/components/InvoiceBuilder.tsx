@@ -92,7 +92,8 @@ export default function InvoiceBuilder({ initialData, isEdit = false }: Props) {
       setCatalogItems(catData || []);
 
       if (!isEdit && nums) {
-        const nextNum = generateNextNumber('FACTURE-COMMERCIAL', nums.map(n => n.invoice_number));
+        const currentYear = new Date().getFullYear().toString();
+        const nextNum = generateNextNumber(currentYear, nums.map(n => n.invoice_number), '/', 3);
         setFormData(prev => ({ ...prev, invoice_number: nextNum }));
       }
 
