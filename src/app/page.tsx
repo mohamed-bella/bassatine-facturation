@@ -17,6 +17,7 @@ import {
   AlertTriangle,
   ArrowRight,
   Bed,
+  FileSpreadsheet,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -109,6 +110,11 @@ export default function Dashboard() {
           <h1 className="text-4xl font-black tracking-tighter text-slate-900 leading-none">Bonjour, Bassatine.</h1>
         </div>
         <div className="flex items-center space-x-3">
+           <Link href="/backup">
+              <Button variant="outline" className="h-12 px-6 rounded-xl text-xs font-bold border-slate-200 hover:bg-slate-50 transition-all">
+                 <FileSpreadsheet className="w-4 h-4 mr-2" /> Backup & Sync
+              </Button>
+           </Link>
            <Link href="/facture-commerciale/new">
               <Button className="h-12 px-6 bg-slate-900 hover:bg-orange-600 text-white rounded-xl text-xs font-black transition-all shadow-xl shadow-slate-900/10">
                  <Plus className="w-4 h-4 mr-2" /> Facture Commerciale

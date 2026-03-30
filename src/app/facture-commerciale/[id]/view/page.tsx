@@ -16,7 +16,6 @@ import {
   FileText,
   CreditCard,
   ArrowRight,
-  Download,
   XCircle,
   Save,
   Eye,
@@ -47,7 +46,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
 
 // Emits exactly the invoice PDF layout from the template
 function InvoicePrintDoc({ invoice, client, settings }: { invoice: Invoice; client: Client | null; settings: Settings | null }) {
-  const isCommercial = !invoice.invoice_number?.startsWith('FAC-PROFORMA');
+  const isCommercial = !invoice.invoice_number?.startsWith('FAC-PROFORMA') && !/^\d{4}\//.test(invoice.invoice_number || '');
   const docTitle = isCommercial ? 'FACTURE COMMERCIALE' : 'FACTURE PROFORMA';
   const docNum = invoice.invoice_number;
   const dateStr = invoice.created_at ? format(parseISO(invoice.created_at as string), 'dd/MM/yyyy') : '';
@@ -348,14 +347,49 @@ export default function ViewInvoicePage() {
   const handleDownloadPDF = async () => {
     const el = document.getElementById('print-area');
     if (!el) return;
-    const html2pdf = (await import('html2pdf.js')).default;
-    html2pdf().set({
-      margin: 0,
-      filename: `Facture-${invoice?.invoice_number}.pdf`,
-      image: { type: 'jpeg' as const, quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const },
-    }).from(el).save();
+
+    const html2canvas = (await import('html2canvas')).default;
+    const jsPDF = (await import('jspdf')).default;
+
+    // Pre-fetch all external images via our server-side proxy to avoid CORS
+    const imgEls = Array.from(el.querySelectorAll('img')) as HTMLImageElement[];
+    const origSrcs: string[] = [];
+    await Promise.all(imgEls.map(async (img, i) => {
+      origSrcs[i] = img.src;
+      try {
+        const proxyRes = await fetch(`/api/image-proxy?url=${encodeURIComponent(img.src)}`);
+        if (proxyRes.ok) {
+          const { base64, contentType } = await proxyRes.json();
+          img.src = `data:${contentType};base64,${base64}`;
+        } else {
+          img.style.visibility = 'hidden';
+        }
+      } catch {
+        img.style.visibility = 'hidden';
+      }
+    }));
+
+    const canvas = await html2canvas(el, {
+      scale: 3,
+      useCORS: false,
+      allowTaint: true,
+      backgroundColor: '#ffffff',
+      width: el.offsetWidth,
+      height: el.offsetHeight,
+    });
+
+    // Restore original img srcs
+    imgEls.forEach((img, i) => {
+      img.src = origSrcs[i];
+      img.style.visibility = '';
+    });
+
+    const imgData = canvas.toDataURL('image/jpeg', 0.98);
+    const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+    const pdfW = pdf.internal.pageSize.getWidth();
+    const pdfH = pdf.internal.pageSize.getHeight();
+    pdf.addImage(imgData, 'JPEG', 0, 0, pdfW, pdfH);
+    pdf.save(`Facture-${invoice?.invoice_number}.pdf`);
   };
 
   if (loading || !invoice) return (
@@ -398,9 +432,6 @@ export default function ViewInvoicePage() {
             )}
             <Button variant="outline" size="icon" className="rounded-xl h-10 w-10" onClick={() => window.print()}>
               <Printer className="w-4 h-4" />
-            </Button>
-            <Button variant="outline" size="icon" className="rounded-xl h-10 w-10" onClick={handleDownloadPDF}>
-              <Download className="w-4 h-4" />
             </Button>
           </div>
         </header>
@@ -523,7 +554,11 @@ export default function ViewInvoicePage() {
                 <FileText className="w-5 h-5 text-slate-400" />
                 <div>
                   <p className="text-[10px] font-bold text-slate-400 uppercase leading-none mb-1">Proforma source</p>
-                  <p className="text-xs font-bold text-slate-900">{proforma.proforma_number}</p>
+                  <p className="text-xs font-bold text-slate-900">
+                    {proforma.proforma_number?.startsWith('FAC-PROFORMA-') 
+                      ? `${proforma.created_at ? format(parseISO(proforma.created_at as string), 'yyyy') : ''}/${proforma.proforma_number.replace('FAC-PROFORMA-', '').replace(/^0+/, '').padStart(2, '0')}`
+                      : proforma.proforma_number}
+                  </p>
                 </div>
               </div>
               <ArrowRight className="w-4 h-4 text-slate-300" />

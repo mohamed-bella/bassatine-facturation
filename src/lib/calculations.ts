@@ -68,11 +68,13 @@ export function formatMAD(amount: number): string {
 
 /**
  * Generate the next sequential number for a document.
- * Given prefix "DEV" and existing ["DEV-001", "DEV-002"], returns "DEV-003".
+ * Given prefix "2026" and existing ["2026/01", "2026/02"], returns "2026/03" if separator is "/".
  */
-export function generateNextNumber(prefix: string, existingNumbers: string[]): string {
+export function generateNextNumber(prefix: string, existingNumbers: string[], separator: string = '-', padding: number = 3): string {
   const maxNum = existingNumbers.reduce((max, num) => {
-    const match = num.match(new RegExp(`^${prefix}-(\\d+)$`));
+    // Escape separator for regex
+    const escSep = separator.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const match = num.match(new RegExp(`^${prefix}${escSep}(\\d+)$`));
     if (match) {
       const n = parseInt(match[1], 10);
       return n > max ? n : max;
@@ -80,5 +82,5 @@ export function generateNextNumber(prefix: string, existingNumbers: string[]): s
     return max;
   }, 0);
 
-  return `${prefix}-${String(maxNum + 1).padStart(3, '0')}`;
+  return `${prefix}${separator}${String(maxNum + 1).padStart(padding, '0')}`;
 }

@@ -7,4 +7,9 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('ATTENTION: Les clés Supabase ne sont pas configurées dans .env.local');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Use native fetch bound to globalThis to bypass Chrome extensions that override window.fetch
+const nativeFetch = globalThis.fetch.bind(globalThis);
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  global: { fetch: nativeFetch },
+});

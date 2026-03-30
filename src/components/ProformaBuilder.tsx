@@ -104,7 +104,8 @@ export default function ProformaBuilder({ initialData, isEdit = false }: Props) 
       setCatalogItems(catData || []);
 
       if (!isEdit && nums) {
-        const nextNum = generateNextNumber('FAC-PROFORMA', nums.map(n => n.proforma_number));
+        const currentYear = new Date().getFullYear().toString();
+        const nextNum = generateNextNumber(currentYear, nums.map(n => n.proforma_number), '/', 2);
         setFormData(prev => ({ ...prev, proforma_number: nextNum }));
       }
 
