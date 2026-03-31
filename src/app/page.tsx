@@ -18,6 +18,10 @@ import {
   ArrowRight,
   Bed,
   FileSpreadsheet,
+  Sparkles,
+  FolderOpen,
+  Tag,
+  Grid
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -102,86 +106,146 @@ export default function Dashboard() {
   );
 
   return (
-    <div className="space-y-10 animate-slide-up pb-20 max-w-5xl mx-auto">
+    <div className="space-y-12 animate-slide-up pb-24 max-w-6xl mx-auto px-4 md:px-8 mt-4">
       {/* HEADER SECTION */}
-      <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-        <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-orange-600 mb-2">Centre de contrôle</p>
-          <h1 className="text-4xl font-black tracking-tighter text-slate-900 leading-none">Bonjour, Bassatine.</h1>
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 relative z-10">
+        <div className="space-y-1">
+          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-white border border-slate-200 mb-4 shadow-sm">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Système opérationnel</span>
+          </div>
+          <h1 className="text-4xl md:text-5xl font-black tracking-tighter text-slate-900 leading-none">Bonjour, Bassatine.</h1>
+          <p className="text-sm font-bold text-slate-400 mt-2">Aperçu et gestion de vos activités récentes.</p>
         </div>
-        <div className="flex items-center space-x-3">
-           <Link href="/backup">
-              <Button variant="outline" className="h-12 px-6 rounded-xl text-xs font-bold border-slate-200 hover:bg-slate-50 transition-all">
-                 <FileSpreadsheet className="w-4 h-4 mr-2" /> Backup & Sync
+        <div className="flex items-center gap-3 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
+           <Link href="/backup" className="shrink-0">
+              <Button variant="outline" className="h-12 px-6 rounded-2xl text-xs font-black border-slate-200 bg-white hover:bg-slate-50 transition-all shadow-md">
+                 <FileSpreadsheet className="w-4 h-4 mr-2 text-slate-400" /> Sauvegardes
               </Button>
            </Link>
-           <Link href="/facture-commerciale/new">
-              <Button className="h-12 px-6 bg-slate-900 hover:bg-orange-600 text-white rounded-xl text-xs font-black transition-all shadow-xl shadow-slate-900/10">
-                 <Plus className="w-4 h-4 mr-2" /> Facture Commerciale
-              </Button>
-           </Link>
-           <Link href="/clients">
-              <Button variant="outline" className="h-12 px-6 rounded-xl text-xs font-bold border-slate-200">
-                 <Users className="w-4 h-4 mr-2" /> Nouveau Client
+           <Link href="/facture-commerciale/new" className="shrink-0">
+              <Button className="h-12 px-6 bg-slate-900 hover:bg-orange-600 text-white rounded-2xl text-xs font-black transition-all shadow-xl shadow-slate-900/10 border border-slate-800">
+                 <Plus className="w-4 h-4 mr-2" /> Créer Facture
               </Button>
            </Link>
         </div>
       </header>
 
-      {/* KPI GRID - MINIMAL */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* KPI GRID - SOLID WHITE CARDS */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
          {[
-           { label: 'C.A (Mois)', value: formatMAD(stats.monthSales), color: 'text-blue-600' },
-           { label: 'Total Encaissé', value: formatMAD(stats.totalPaid), color: 'text-emerald-600' },
-           { label: 'À percevoir', value: formatMAD(stats.totalDue), color: 'text-rose-600' },
-           { label: 'F. Proforma actifs', value: stats.openProformas, color: 'text-orange-600' },
-         ].map((stat, i) => (
-           <div key={i} className="p-6 rounded-2xl bg-white border border-slate-100 shadow-sm">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{stat.label}</p>
-              <h4 className={cn("text-xl font-black tabular-nums leading-none tracking-tight", stat.color)}>
-                 {stat.value} {typeof stat.value === 'string' && stat.value.includes(',') ? <span className="text-[10px] font-bold opacity-30">MAD</span> : ''}
-              </h4>
-           </div>
-         ))}
+           { label: 'C.A (Mois)', value: formatMAD(stats.monthSales), color: 'text-blue-600', bg: 'bg-blue-50', icon: TrendingUp, iconColor: 'text-blue-500' },
+           { label: 'Total Encaissé', value: formatMAD(stats.totalPaid), color: 'text-emerald-600', bg: 'bg-emerald-50', icon: CheckCircle2, iconColor: 'text-emerald-500' },
+           { label: 'À percevoir', value: formatMAD(stats.totalDue), color: 'text-rose-600', bg: 'bg-rose-50', icon: AlertTriangle, iconColor: 'text-rose-500' },
+           { label: 'F. Proforma Actifs', value: stats.openProformas, color: 'text-orange-600', bg: 'bg-orange-50', icon: FileText, iconColor: 'text-orange-500', isNumber: true },
+         ].map((stat, i) => {
+           const Icon = stat.icon;
+           return (
+             <div key={i} className="relative p-8 rounded-[2.5rem] bg-white border border-slate-200 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] overflow-hidden group hover:shadow-2xl hover:shadow-slate-200 transition-all duration-500 hover:-translate-y-1">
+                <div className="flex justify-between items-start mb-6 relative z-10">
+                   <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${stat.bg} shadow-inner`}>
+                      <Icon className={`w-6 h-6 ${stat.iconColor}`} />
+                   </div>
+                   {!stat.isNumber && <Badge variant="outline" className="border-slate-100 text-slate-300 font-black bg-slate-50 text-[9px] uppercase tracking-widest px-2">MAD</Badge>}
+                </div>
+                <div className="relative z-10">
+                   <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.15em] mb-2">{stat.label}</p>
+                   <h4 className={cn("text-3xl font-black tabular-nums tracking-tighter", stat.color)}>
+                      {stat.value}
+                   </h4>
+                </div>
+             </div>
+           );
+         })}
       </div>
 
-      <div className="space-y-6">
-         <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Activité récente</h3>
-         <Card className="border border-slate-100 rounded-3xl bg-white overflow-hidden p-2 shadow-sm">
-            <CardContent className="p-6 space-y-6">
-               {recentActivity.map((doc, i) => {
-                 const client = clients.find(c => c.id === doc.client_id);
-                 const isInvoice = (doc as any).type === 'facture';
-                 const number = isInvoice ? (doc as Invoice).invoice_number : (doc as Proforma).proforma_number;
-                 const amount = isInvoice ? (doc as Invoice).total_ttc : (doc as Proforma).total_ttc;
-                 const url = isInvoice ? `/facture-commerciale/${doc.id}/view` : `/proforma/${doc.id}/view`;
+      <div className="space-y-8 pt-4">
+         <div className="flex items-center justify-between">
+            <h3 className="text-2xl font-black text-slate-900 tracking-tighter flex items-center">
+               <Grid className="w-6 h-6 mr-4 text-orange-600" />
+               Actions Rapides
+            </h3>
+         </div>
 
-                 return (
-                   <Link key={i} href={url} className="flex justify-between items-center group cursor-pointer hover:bg-slate-50 p-3 rounded-2xl transition-colors">
-                      <div className="flex items-center space-x-4">
-                         <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center border transition-all", isInvoice ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-900')}>
-                            {isInvoice ? <CheckCircle2 className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
-                         </div>
-                         <div>
-                            <p className="text-xs font-black uppercase leading-none mb-1 group-hover:text-orange-600 transition-colors">{number}</p>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{client?.name || '—'}</p>
-                         </div>
-                      </div>
-                      <div className="text-right flex flex-col items-end">
-                         <span className="text-sm font-black tabular-nums leading-none mb-1 text-slate-900">{formatMAD(Number(amount))}</span>
-                         <span className="text-[8px] font-bold text-slate-300 uppercase">{format(parseISO(doc.created_at), 'dd MMM')}</span>
-                      </div>
-                   </Link>
-                 );
-               })}
-               
-               <Link href="/f-commercial" className="block">
-                  <Button variant="ghost" className="w-full h-12 hover:bg-slate-50 text-slate-400 hover:text-slate-900 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all mt-4 border border-dashed border-slate-200">
-                     Voir tout le flux <ArrowRight className="w-4 h-4 ml-3" />
-                  </Button>
-               </Link>
-            </CardContent>
-         </Card>
+         {/* COLORFUL BENTO GRID - REIMAGINED AS SOLID WHITE CARDS */}
+         <div className="grid grid-cols-1 md:grid-cols-4 auto-rows-[160px] gap-6">
+            
+            {/* AI Generation - Large White Highlight */}
+            <Link href="/facture-commerciale/ai" className="md:col-span-2 md:row-span-2 group relative overflow-hidden rounded-[3rem] bg-white p-10 flex flex-col justify-between border-2 border-orange-100 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)] hover:shadow-2xl transition-all duration-500">
+               <div className="absolute top-0 right-0 w-64 h-64 bg-orange-50/50 rounded-full blur-3xl -mr-20 -mt-20 group-hover:scale-110 transition-transform duration-700"></div>
+               <div className="w-16 h-16 bg-orange-600 rounded-[1.5rem] flex items-center justify-center shadow-xl shadow-orange-600/20 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 z-10">
+                  <Sparkles className="w-8 h-8 text-white" />
+               </div>
+               <div className="z-10 mt-auto">
+                  <h4 className="text-slate-900 font-black text-3xl md:text-4xl transition-colors tracking-tight leading-none mb-3">Générateur IA</h4>
+                  <p className="text-slate-400 text-sm font-bold tracking-tight leading-relaxed max-w-sm">Dictez votre facture en langage naturel. L'intelligence artificielle s'occupe de structurer les données instantanément.</p>
+               </div>
+            </Link>
+
+            {/* Listes - Clean white tiles */}
+            <Link href="/f-commercial" className="md:col-span-1 group rounded-[3rem] bg-white p-8 flex flex-col justify-between hover:shadow-2xl hover:border-blue-200 transition-all shadow-[0_15px_30px_-5px_rgba(0,0,0,0.05)] border border-slate-200 relative overflow-hidden">
+               <div className="w-12 h-12 bg-blue-50 rounded-[1.2rem] flex items-center justify-center border border-blue-100 z-10 transition-all group-hover:bg-blue-600">
+                  <FolderOpen className="w-6 h-6 text-blue-600 group-hover:text-white transition-colors" />
+               </div>
+               <div className="z-10">
+                  <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1.5 leading-none">Archive</p>
+                  <h4 className="text-slate-900 font-black text-base leading-tight uppercase group-hover:text-blue-600 transition-colors tracking-tighter">Factures<br/>Commerciales</h4>
+               </div>
+            </Link>
+
+            <Link href="/proformas" className="md:col-span-1 group rounded-[3rem] bg-white p-8 flex flex-col justify-between hover:shadow-2xl hover:border-emerald-200 transition-all shadow-[0_15px_30px_-5px_rgba(0,0,0,0.05)] border border-slate-200 relative overflow-hidden">
+               <div className="w-12 h-12 bg-emerald-50 rounded-[1.2rem] flex items-center justify-center border border-emerald-100 z-10 transition-all group-hover:bg-emerald-600">
+                  <FolderOpen className="w-6 h-6 text-emerald-600 group-hover:text-white transition-colors" />
+               </div>
+               <div className="z-10">
+                  <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1.5 leading-none">Archive</p>
+                  <h4 className="text-slate-900 font-black text-base leading-tight uppercase group-hover:text-emerald-600 transition-colors tracking-tighter">Factures<br/>Proformas</h4>
+               </div>
+            </Link>
+
+            {/* Create Actions */}
+            <Link href="/facture-commerciale/new" className="md:col-span-1 group rounded-[3rem] bg-white p-8 flex flex-col justify-between hover:shadow-2xl hover:border-orange-200 transition-all shadow-[0_15px_30px_-5px_rgba(0,0,0,0.05)] border border-slate-200 relative overflow-hidden">
+               <div className="w-12 h-12 bg-slate-50 rounded-[1.2rem] flex items-center justify-center group-hover:bg-orange-600 transition-all duration-300">
+                  <Plus className="w-6 h-6 text-slate-500 group-hover:text-white transition-colors" />
+               </div>
+               <div>
+                  <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1.5 leading-none">Nouveau</p>
+                  <h4 className="text-slate-900 font-black text-base leading-tight uppercase group-hover:text-orange-600 transition-colors tracking-tighter">Nouvelle Facture<br/>Commerciale</h4>
+               </div>
+            </Link>
+
+            <Link href="/proforma/new" className="md:col-span-1 group rounded-[3rem] bg-white p-8 flex flex-col justify-between hover:shadow-2xl hover:border-slate-300 transition-all shadow-[0_15px_30px_-5px_rgba(0,0,0,0.05)] border border-slate-200 relative overflow-hidden">
+               <div className="w-12 h-12 bg-slate-50 rounded-[1.2rem] flex items-center justify-center group-hover:bg-slate-900 transition-all duration-300">
+                  <Plus className="w-6 h-6 text-slate-500 group-hover:text-white transition-colors" />
+               </div>
+               <div>
+                  <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1.5 leading-none">Nouveau</p>
+                  <h4 className="text-slate-900 font-black text-base leading-tight uppercase group-hover:text-slate-900 transition-colors tracking-tighter">Nouvelle Facture<br/>Proforma</h4>
+               </div>
+            </Link>
+
+            {/* Management Actions */}
+            <Link href="/clients" className="md:col-span-2 lg:col-span-1 group rounded-[3rem] bg-white p-8 flex flex-col justify-between hover:shadow-2xl hover:border-pink-200 transition-all shadow-[0_15px_30px_-5px_rgba(0,0,0,0.05)] border border-slate-200 relative overflow-hidden">
+               <div className="w-12 h-12 bg-pink-50 rounded-[1.2rem] flex items-center justify-center border border-pink-100 z-10 transition-all group-hover:bg-pink-600">
+                  <Users className="w-6 h-6 text-pink-600 group-hover:text-white transition-colors" />
+               </div>
+               <div className="z-10">
+                  <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1.5 leading-none">Partenaires</p>
+                  <h4 className="text-white font-black text-base leading-tight uppercase group-hover:text-pink-600 transition-colors tracking-tighter text-slate-900">Gérer Les les<br/>Agences Clients</h4>
+               </div>
+            </Link>
+
+            <Link href="/catalog" className="md:col-span-2 lg:col-span-1 group rounded-[3rem] bg-white p-8 flex flex-col justify-between hover:shadow-2xl hover:border-cyan-200 transition-all shadow-[0_15px_30px_-5px_rgba(0,0,0,0.05)] border border-slate-200 relative overflow-hidden">
+               <div className="w-12 h-12 bg-cyan-50 rounded-[1.2rem] flex items-center justify-center border border-cyan-100 z-10 transition-all group-hover:bg-cyan-600">
+                  <Bed className="w-6 h-6 text-cyan-600 group-hover:text-white transition-colors" />
+               </div>
+               <div className="z-10">
+                  <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1.5 leading-none">Catalogue</p>
+                  <h4 className="text-white font-black text-base leading-tight uppercase group-hover:text-cyan-600 transition-colors tracking-tighter text-slate-900">Catalogue des<br/>Chambres & Services</h4>
+               </div>
+            </Link>
+
+         </div>
       </div>
     </div>
   );
