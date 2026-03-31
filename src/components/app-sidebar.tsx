@@ -119,19 +119,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader className="pt-8 pb-4 px-6 flex flex-col items-center border-b border-slate-50 mb-4">
         <SidebarMenu>
           <SidebarMenuItem>
-             <Link href="/" className="flex flex-col items-center gap-4 w-full group">
-               <div className="relative group-hover:scale-105 transition-all duration-500">
-                 <img 
-                   src="https://bassatine-skoura.com/wp-content/uploads/2025/01/Green-Cream-Palm-Beach-Club-Logo-240-x-80-px.png" 
-                   alt="Bassatine Logo"
-                   className="h-10 w-auto object-contain"
-                 />
-               </div>
-               <div className="flex flex-col items-center gap-0.5 leading-none">
-                 <span className="font-black text-[13px] tracking-[0.2em] text-slate-900 group-hover:text-orange-600 transition-colors uppercase">Bassatine Skoura</span>
-                 <span className="text-[9px] text-slate-400 font-black uppercase tracking-[0.3em]">Module de Facturation</span>
-               </div>
-             </Link>
+              <Link href="/" className="flex flex-col items-center gap-4 w-full group">
+                <div className="relative group-hover:scale-105 transition-all duration-500 shrink-0">
+                  <img 
+                    src="https://bassatine-skoura.com/wp-content/uploads/2025/01/Green-Cream-Palm-Beach-Club-Logo-240-x-80-px.png" 
+                    alt="Bassatine Logo"
+                    className="h-10 w-auto object-contain group-data-[state=collapsed]:h-6 transition-all duration-300"
+                  />
+                </div>
+                <div className="flex flex-col items-center gap-0.5 leading-none group-data-[state=collapsed]:hidden">
+                  <span className="font-black text-[11px] tracking-[0.2em] text-slate-900 group-hover:text-orange-600 transition-colors uppercase">Skoura Group</span>
+                  <span className="text-[8px] text-slate-400 font-black uppercase tracking-[0.3em]">Billing Hub</span>
+                </div>
+              </Link>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>

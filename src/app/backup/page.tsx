@@ -421,18 +421,22 @@ export default function BackupPage() {
 
   return (
     <div className="max-w-6xl mx-auto pb-40 animate-slide-up">
-      <header className="flex justify-between items-center mb-10">
+      {/* HEADER */}
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-10">
         <div className="flex items-center space-x-4">
-          <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-xl bg-white border border-slate-200 shadow-sm">
+          <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-xl bg-white border border-slate-200 shadow-sm shrink-0">
             <ChevronLeft className="w-4 h-4" />
           </Button>
-          <div>
-            <h2 className="text-3xl font-black tracking-tight text-slate-900">Sauvegarde & Synchronisation</h2>
-            <p className="text-sm text-muted-foreground mt-0.5">Gardez vos données en sécurité et connectez-les à vos outils.</p>
+          <div className="space-y-1">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Administration</p>
+            <h1 className="text-3xl md:text-4xl font-black tracking-tight text-slate-900 leading-none group">
+              <span className="inline-block group-hover:scale-105 transition-transform duration-500">BACKUP & SYNC</span>
+            </h1>
+            <p className="text-xs font-bold text-slate-400 mt-2">Exportez et sécurisez vos données stratégiques.</p>
           </div>
         </div>
-        <Badge variant="outline" className="bg-emerald-50 text-emerald-600 border-emerald-200 px-4 py-2 rounded-xl text-xs font-bold">
-          <CheckCircle2 className="w-3.5 h-3.5 mr-2" /> Base de données sécurisée
+        <Badge variant="outline" className="bg-emerald-50 text-emerald-600 border-none px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-sm">
+          <CheckCircle2 className="w-3.5 h-3.5 mr-2" /> Sync Active
         </Badge>
       </header>
 

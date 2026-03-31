@@ -340,45 +340,47 @@ export default function ViewProformaPage() {
     : proforma.proforma_number;
 
   return (
-    <div className="max-w-6xl mx-auto pb-40 animate-slide-up flex flex-col lg:flex-row gap-10">
+    <div className="max-w-6xl mx-auto pb-40 animate-slide-up flex flex-col lg:flex-row gap-8 px-4 md:px-0">
       {/* LEFT: DOCUMENT */}
-      <div className="flex-1 space-y-6">
-        <header className="no-print flex justify-between items-start">
+      <div className="flex-1 space-y-6 min-w-0">
+        <header className="no-print flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="icon" onClick={() => router.push('/proformas')} className="rounded-xl bg-white border border-slate-200 shadow-sm">
+            <Button variant="ghost" size="icon" onClick={() => router.push('/proformas')} className="rounded-xl bg-white border border-slate-200 shadow-sm shrink-0">
               <ChevronLeft className="w-4 h-4" />
             </Button>
             <div>
-              <h2 className="text-2xl font-black tracking-tight text-slate-900">{displayNum}</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">Facture Proforma</p>
+              <h2 className="text-xl md:text-2xl font-black tracking-tight text-slate-900 leading-none">{displayNum}</h2>
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-2">Facture Proforma</p>
             </div>
           </div>
-          <div className="flex items-center space-x-2 flex-wrap gap-y-2">
-            <Badge className={`${statusInfo.color} border rounded-xl px-4 py-2 text-xs font-bold`}>{statusInfo.label}</Badge>
+          <div className="flex items-center gap-3 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
+            <Badge className={`${statusInfo.color} border rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-widest shrink-0 shadow-sm`}>{statusInfo.label}</Badge>
             {proforma.status === 'brouillon' && (
-              <>
+              <div className="flex items-center gap-2 shrink-0">
                 <Link href={`/proforma/${proforma.id}/edit`}>
-                  <Button variant="outline" className="rounded-xl h-10 text-xs font-bold">Modifier</Button>
+                  <Button variant="outline" className="rounded-xl h-10 px-4 text-[10px] font-black uppercase tracking-widest border-slate-200 bg-white shadow-sm">Modifier</Button>
                 </Link>
-                <Button onClick={() => updateStatus('envoyé')} disabled={actionLoading} className="rounded-xl h-10 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold">
-                  <Send className="w-3.5 h-3.5 mr-2" /> Marquer envoyé
+                <Button onClick={() => updateStatus('envoyé')} disabled={actionLoading} className="rounded-xl h-10 px-4 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black uppercase tracking-widest shadow-xl shadow-blue-600/10 transition-all">
+                  <Send className="w-3.5 h-3.5 mr-2" /> Envoyer
                 </Button>
-              </>
+              </div>
             )}
             {proforma.status === 'envoyé' && (
-              <Button onClick={() => updateStatus('refusé')} disabled={actionLoading} variant="outline" className="rounded-xl h-10 text-rose-500 hover:text-rose-600 hover:bg-rose-50 text-xs font-bold">
+              <Button onClick={() => updateStatus('refusé')} disabled={actionLoading} variant="outline" className="rounded-xl h-10 px-4 text-rose-500 border-rose-200 hover:bg-rose-50 text-[10px] font-black uppercase tracking-widest shrink-0 transition-all">
                 <XCircle className="w-4 h-4 mr-2" /> Refusé
               </Button>
             )}
-            <Button variant="outline" size="icon" className="rounded-xl h-10 w-10" onClick={() => window.print()}>
-              <Printer className="w-4 h-4" />
+            <Button variant="outline" size="icon" className="rounded-xl h-10 w-10 shrink-0 bg-white border-slate-200 shadow-sm" onClick={() => window.print()}>
+              <Printer className="w-4 h-4 text-slate-600" />
             </Button>
           </div>
         </header>
 
-        {/* A4 Document */}
-        <div className="shadow-2xl rounded-xl overflow-hidden border border-slate-200">
-          <ProformaPrintDoc proforma={proforma} client={client} settings={settings} />
+        {/* A4 Document - Scaling for Mobile */}
+        <div className="shadow-[0_20px_50px_-20px_rgba(0,0,0,0.15)] rounded-[2.5rem] overflow-hidden border border-slate-200 bg-slate-200 p-4 md:p-12 flex justify-center min-h-[500px] md:min-h-[1000px]">
+          <div className="origin-top scale-[0.4] sm:scale-[0.5] md:scale-[0.8] lg:scale-100 transition-transform duration-500">
+            <ProformaPrintDoc proforma={proforma} client={client} settings={settings} />
+          </div>
         </div>
       </div>
 

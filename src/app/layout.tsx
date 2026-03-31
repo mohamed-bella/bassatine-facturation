@@ -48,20 +48,20 @@ export default function RootLayout({
               <AppSidebar />
               <SidebarInset className="bg-slate-100/80">
                 {/* HEADER */}
-                <header className="h-14 flex items-center no-print z-40 sticky top-0 bg-white/80 backdrop-blur-xl border-b border-sidebar-border px-6">
+                <header className="h-14 flex items-center no-print z-40 sticky top-0 bg-white/80 backdrop-blur-xl border-b border-sidebar-border px-4 md:px-6">
                   <div className="flex items-center space-x-4">
                     <SidebarTrigger className="-ml-1" />
                     <Separator orientation="vertical" className="h-4 mr-2" />
                     <img 
                       src="https://bassatine-skoura.com/wp-content/uploads/2025/01/Green-Cream-Palm-Beach-Club-Logo-240-x-80-px.png" 
                       alt="Logo"
-                      className="h-6 w-auto opacity-80"
+                      className="h-5 md:h-6 w-auto opacity-80"
                     />
                   </div>
                 </header>
-
+ 
                 {/* PAGE CONTENT */}
-                <div className="flex-1 py-8 px-6 relative pointer-events-auto max-w-[1600px] mx-auto w-full">
+                <div className="flex-1 py-6 md:py-8 px-4 md:px-6 relative pointer-events-auto max-w-[1600px] mx-auto w-full">
                   {children}
                 </div>
               </SidebarInset>

@@ -93,39 +93,42 @@ export default function ProformasPage() {
   return (
     <div className="space-y-8 animate-slide-up">
       {/* HEADER */}
-      <header className="flex justify-between items-end">
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Documents</p>
-          <h1 className="text-3xl font-black tracking-tight text-slate-900">Proformas</h1>
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+        <div className="space-y-1">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Prévisions Client</p>
+          <h1 className="text-3xl md:text-4xl font-black tracking-tight text-slate-900 leading-none group">
+            <span className="inline-block group-hover:scale-105 transition-transform duration-500">PROFORMAS</span>
+          </h1>
+          <p className="text-xs font-bold text-slate-400 mt-2">Gestion et suivi des devis officiels.</p>
         </div>
-        <div className="flex items-center space-x-3">
-          <Button asChild variant="outline" className="h-11 px-6 border-orange-200 text-orange-600 hover:bg-orange-50 rounded-xl text-xs font-black uppercase tracking-widest transition-all">
+        <div className="flex items-center gap-3 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
+          <Button asChild variant="outline" className="shrink-0 h-11 px-6 border-slate-200 bg-white text-orange-600 hover:bg-orange-50 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm">
             <Link href="/facture-commerciale/ai">
-              <Sparkles className="w-4 h-4 mr-2" /> Générer via IA
+              <Sparkles className="w-4 h-4 mr-2" /> <span className="hidden sm:inline">Générer via </span>IA
             </Link>
           </Button>
-          <Button asChild className="h-11 px-6 bg-slate-900 hover:bg-orange-600 text-white rounded-xl text-xs font-bold transition-all">
+          <Button asChild className="shrink-0 h-11 px-6 bg-slate-900 hover:bg-orange-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-xl shadow-slate-900/10">
             <Link href="/proforma/new">
-              <Plus className="w-4 h-4 mr-2" /> Nouveau proforma
+              <Plus className="w-4 h-4 mr-2" /> Nouveau
             </Link>
           </Button>
         </div>
       </header>
 
       {/* FILTERS */}
-      <div className="flex items-center gap-4">
+      <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4">
         <div className="relative flex-1">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <Input
             placeholder="Rechercher par numéro ou partenaire..."
-            className="pl-11 h-11 bg-white border-slate-200 rounded-xl text-sm"
+            className="pl-11 h-12 bg-white border-slate-200 rounded-xl text-sm font-bold placeholder:text-slate-300 placeholder:font-medium shadow-sm transition-all focus:border-orange-500"
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
         </div>
-        <div className="flex items-center bg-slate-50 p-1 rounded-xl">
+        <div className="flex items-center bg-slate-100/50 p-1 rounded-xl overflow-x-auto scrollbar-hide border border-slate-200/50">
           {[
-            { key: 'all', label: 'Tous' },
+            { key: 'all', label: 'Toutes' },
             { key: 'brouillon', label: 'Brouillon' },
             { key: 'envoyé', label: 'Envoyé' },
             { key: 'accepté', label: 'Accepté' },
@@ -134,7 +137,7 @@ export default function ProformasPage() {
             <button
               key={tab.key}
               onClick={() => setStatusFilter(tab.key)}
-              className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${statusFilter === tab.key ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400'}`}
+              className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all whitespace-nowrap ${statusFilter === tab.key ? 'bg-white text-slate-900 shadow-md scale-105' : 'text-slate-400 hover:text-slate-600'}`}
             >
               {tab.label}
             </button>
@@ -143,96 +146,100 @@ export default function ProformasPage() {
       </div>
 
       {/* TABLE */}
-      <Card className="border border-slate-100 rounded-2xl shadow-sm overflow-hidden bg-white">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-slate-50 hover:bg-slate-50">
-              <TableHead className="py-4 px-6 text-xs font-bold text-slate-500">Numéro</TableHead>
-              <TableHead className="py-4 px-6 text-xs font-bold text-slate-500">Partenaire</TableHead>
-              <TableHead className="py-4 px-6 text-xs font-bold text-slate-500 text-center">Statut</TableHead>
-              <TableHead className="py-4 px-6 text-xs font-bold text-slate-500 text-right">Total TTC</TableHead>
-              <TableHead className="py-4 px-6 text-xs font-bold text-slate-500 text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="py-20 text-center">
-                  <FileText className="w-12 h-12 mx-auto mb-3 text-slate-200" />
-                  <p className="text-sm text-muted-foreground">Aucun proforma trouvé</p>
-                </TableCell>
+      <Card className="border border-slate-200 rounded-[2rem] shadow-[0_10px_40px_-15px_rgba(0,0,0,0.05)] overflow-hidden bg-white">
+        <div className="overflow-x-auto scrollbar-hide">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-b border-slate-100">
+                <TableHead className="py-5 px-6 text-[10px] font-black uppercase tracking-widest text-slate-400">Numéro</TableHead>
+                <TableHead className="py-5 px-6 text-[10px] font-black uppercase tracking-widest text-slate-400">Partenaire</TableHead>
+                <TableHead className="py-5 px-6 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Statut</TableHead>
+                <TableHead className="py-5 px-6 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Total TTC</TableHead>
+                <TableHead className="py-5 px-6 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Actions</TableHead>
               </TableRow>
-            ) : (
-              filtered.map(p => {
-                const clientName = p.client_id ? clients[p.client_id]?.name : (p.recipient_name || '—');
-                const status = STATUS_CONFIG[p.status] || STATUS_CONFIG.brouillon;
-                return (
-                  <TableRow key={p.id} className="group hover:bg-slate-50/50 transition-colors">
-                    <TableCell className="py-4 px-6">
-                      <div className="flex flex-col">
-                        <Link href={`/proforma/${p.id}/view`} className="text-sm font-bold text-slate-900 hover:text-orange-600 transition-colors">
-                          {p.proforma_number?.startsWith('FAC-PROFORMA-') 
-                            ? `${p.created_at ? format(parseISO(p.created_at as string), 'yyyy') : ''}/${p.proforma_number.replace('FAC-PROFORMA-', '').replace(/^0+/, '').padStart(3, '0')}`
-                            : p.proforma_number}
-                        </Link>
-                        <span className="text-xs text-muted-foreground mt-0.5 flex items-center">
-                          <Clock className="w-3 h-3 mr-1" />
-                          {format(parseISO(p.created_at), 'dd/MM/yyyy')}
-                        </span>
+            </TableHeader>
+            <TableBody>
+              {filtered.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="py-24 text-center">
+                    <div className="flex flex-col items-center justify-center space-y-4">
+                      <div className="w-16 h-16 bg-slate-50 rounded-3xl flex items-center justify-center">
+                        <FileText className="w-8 h-8 text-slate-200" />
                       </div>
-                    </TableCell>
-                    <TableCell className="py-4 px-6">
-                      <span className="text-sm font-medium text-slate-700">{clientName}</span>
-                    </TableCell>
-                    <TableCell className="py-4 px-6 text-center">
-                      <Badge variant="outline" className={`rounded-lg text-[11px] font-bold border ${status.color}`}>
-                        {status.label}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="py-4 px-6 text-right">
-                      <span className="text-sm font-bold text-slate-900 tabular-nums">{formatMAD(Number(p.total_ttc))}</span>
-                      <span className="text-xs text-muted-foreground ml-1">MAD</span>
-                    </TableCell>
-                    <TableCell className="py-4 px-6 text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="w-8 h-8 rounded-lg opacity-0 group-hover:opacity-100 transition-all">
-                            <MoreHorizontal className="w-4 h-4 text-slate-400" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="rounded-xl p-1 border-slate-200 shadow-lg bg-white w-44">
-                          <DropdownMenuItem asChild className="p-2 rounded-lg cursor-pointer text-sm">
-                            <Link href={`/proforma/${p.id}/view`}>
-                              <Eye className="w-3.5 h-3.5 mr-2 text-slate-400" /> Voir
-                            </Link>
-                          </DropdownMenuItem>
-                          {(p.status === 'brouillon' || p.status === 'envoyé') && (
-                            <DropdownMenuItem asChild className="p-2 rounded-lg cursor-pointer text-sm">
-                              <Link href={`/proforma/${p.id}/edit`}>
-                                <Edit className="w-3.5 h-3.5 mr-2 text-slate-400" /> Modifier
+                      <p className="text-xs font-black uppercase tracking-widest text-slate-300">Aucun proforma dans cette catégorie</p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filtered.map(p => {
+                  const clientName = p.client_id ? clients[p.client_id]?.name : (p.recipient_name || '—');
+                  const status = STATUS_CONFIG[p.status] || STATUS_CONFIG.brouillon;
+                  return (
+                    <TableRow key={p.id} className="group hover:bg-slate-50/30 transition-colors border-b border-slate-100 last:border-0">
+                      <TableCell className="py-5 px-6 min-w-[180px]">
+                        <div className="flex flex-col">
+                          <Link href={`/proforma/${p.id}/view`} className="text-sm font-black text-slate-900 hover:text-orange-600 transition-colors tracking-tight">
+                            {p.proforma_number?.startsWith('FAC-PROFORMA-') 
+                              ? `${p.created_at ? format(parseISO(p.created_at as string), 'yyyy') : ''}/${p.proforma_number.replace('FAC-PROFORMA-', '').replace(/^0+/, '').padStart(3, '0')}`
+                              : p.proforma_number}
+                          </Link>
+                          <span className="text-[10px] font-bold text-slate-400 mt-1 flex items-center uppercase tracking-wider">
+                            <Clock className="w-3 h-3 mr-1.5 opacity-50" />
+                            {format(parseISO(p.created_at), 'dd MMM yyyy')}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="py-5 px-6 min-w-[180px]">
+                        <span className="text-sm font-bold text-slate-700 tracking-tight">{clientName}</span>
+                      </TableCell>
+                      <TableCell className="py-5 px-6 text-center">
+                        <Badge variant="outline" className={`rounded-xl py-1 px-3 text-[9px] font-black uppercase tracking-widest border border-current bg-transparent ${status.color.split(' ').pop()}`}>
+                          {status.label}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="py-5 px-6 text-right">
+                        <div className="flex flex-col items-end">
+                          <span className="text-sm font-black text-slate-900 tracking-tighter tabular-nums">{formatMAD(Number(p.total_ttc))}</span>
+                          <span className="text-[9px] font-black text-slate-400 uppercase leading-none mt-0.5">Dirhams (MAD)</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="py-5 px-6 text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="w-9 h-9 rounded-xl md:opacity-0 md:group-hover:opacity-100 transition-all border border-transparent hover:border-slate-200 hover:bg-white shadow-sm">
+                              <MoreHorizontal className="w-4 h-4 text-slate-400" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="rounded-2xl p-1.5 border-slate-200 shadow-2xl bg-white w-48">
+                            <DropdownMenuItem asChild className="p-2.5 rounded-xl cursor-pointer text-xs font-bold uppercase tracking-widest text-slate-600 focus:bg-slate-50 focus:text-slate-900">
+                              <Link href={`/proforma/${p.id}/view`} className="flex items-center">
+                                <Eye className="w-4 h-4 mr-3 text-slate-400" /> Consulter
                               </Link>
                             </DropdownMenuItem>
-                          )}
-                          {(p.status === 'brouillon' || p.status === 'envoyé') && (
-                            <>
-                              <DropdownMenuSeparator className="bg-slate-100 mx-1" />
-                              <DropdownMenuItem
-                                onClick={() => handleDelete(p.id)}
-                                className="p-2 rounded-lg cursor-pointer text-sm text-rose-600 focus:bg-rose-50"
-                              >
-                                <Trash2 className="w-3.5 h-3.5 mr-2" /> Supprimer
+                            {(p.status === 'brouillon' || p.status === 'envoyé') && (
+                              <DropdownMenuItem asChild className="p-2.5 rounded-xl cursor-pointer text-xs font-bold uppercase tracking-widest text-slate-600 focus:bg-slate-50 focus:text-slate-900">
+                                <Link href={`/proforma/${p.id}/edit`} className="flex items-center">
+                                  <Edit className="w-4 h-4 mr-3 text-slate-400" /> Éditer
+                                </Link>
                               </DropdownMenuItem>
-                            </>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
+                            )}
+                            <DropdownMenuSeparator className="bg-slate-100 my-1" />
+                            <DropdownMenuItem
+                              onClick={() => handleDelete(p.id)}
+                              className="p-2.5 rounded-xl cursor-pointer text-xs font-bold uppercase tracking-widest text-rose-600 focus:bg-rose-50 focus:text-rose-700"
+                            >
+                              <Trash2 className="w-4 h-4 mr-3" /> Supprimer
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </Card>
     </div>
   );

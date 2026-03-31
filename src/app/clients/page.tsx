@@ -132,142 +132,152 @@ export default function ClientsPage() {
   return (
     <div className="space-y-8 animate-slide-up">
       {/* HEADER */}
-      <header className="flex justify-between items-end">
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Gestion</p>
-          <h1 className="text-3xl font-black tracking-tight text-slate-900">Répertoire Partenaires</h1>
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+        <div className="space-y-1">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Base de Données</p>
+          <h1 className="text-3xl md:text-4xl font-black tracking-tight text-slate-900 leading-none group">
+            <span className="inline-block group-hover:scale-105 transition-transform duration-500">PARTENAIRES</span>
+          </h1>
+          <p className="text-xs font-bold text-slate-400 mt-2">Répertoire complet de vos agences et clients.</p>
         </div>
-
+ 
         <Dialog open={showModal} onOpenChange={(v) => { setShowModal(v); if (!v) resetForm(); }}>
           <DialogTrigger asChild>
-            <Button className="h-11 px-6 bg-slate-900 hover:bg-orange-600 text-white rounded-xl text-xs font-bold transition-all">
+            <Button className="w-full md:w-auto h-11 px-6 bg-slate-900 hover:bg-orange-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-xl shadow-slate-900/10">
               <Plus className="w-4 h-4 mr-2" />
               Nouveau partenaire
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-lg rounded-2xl p-8 border-none shadow-2xl bg-white">
+          <DialogContent className="sm:max-w-lg rounded-2xl p-8 border-none shadow-2xl bg-white overflow-y-auto max-h-[90vh]">
             <DialogHeader className="mb-6">
               <DialogTitle className="text-xl font-black tracking-tight text-slate-900">
                 {editingClient ? 'Modifier le partenaire' : 'Nouveau partenaire'}
               </DialogTitle>
-              <DialogDescription className="text-xs text-muted-foreground">
-                Remplissez les informations du partenaire
+              <DialogDescription className="text-xs text-muted-foreground font-medium">
+                Remplissez les informations du partenaire pour la facturation intelligente.
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSave} className="space-y-5">
               <div className="space-y-2">
-                <Label className="text-xs font-bold text-slate-500">Nom / Raison sociale *</Label>
+                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Nom / Raison sociale *</Label>
                 <Input
                   value={form.name}
                   onChange={e => setForm({ ...form, name: e.target.value })}
-                  className="h-11 bg-slate-50 border-slate-200 rounded-xl text-sm"
+                  className="h-11 bg-slate-50 border-slate-200 rounded-xl text-sm font-bold"
                   required
-                  placeholder="Ex: Hôtel Atlas"
+                  placeholder="Ex: Hôtel Atlas Skoura"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-xs font-bold text-slate-500">Email</Label>
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Email</Label>
                   <Input
                     type="email"
                     value={form.email}
                     onChange={e => setForm({ ...form, email: e.target.value })}
-                    className="h-11 bg-slate-50 border-slate-200 rounded-xl text-sm"
+                    className="h-11 bg-slate-50 border-slate-200 rounded-xl text-sm font-bold"
                     placeholder="contact@hotel.com"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs font-bold text-slate-500">Téléphone</Label>
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Téléphone</Label>
                   <Input
                     value={form.phone}
                     onChange={e => setForm({ ...form, phone: e.target.value })}
-                    className="h-11 bg-slate-50 border-slate-200 rounded-xl text-sm"
+                    className="h-11 bg-slate-50 border-slate-200 rounded-xl text-sm font-bold"
                     placeholder="06 XX XX XX XX"
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-xs font-bold text-slate-500">Numéro ICE / Identification</Label>
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Numéro ICE</Label>
                   <Input
                     value={form.company_ice}
                     onChange={e => setForm({ ...form, company_ice: e.target.value })}
-                    className="h-11 bg-slate-50 border-slate-200 rounded-xl text-sm font-mono"
-                    placeholder="Ex: 002092692000010"
+                    className="h-11 bg-slate-50 border-slate-200 rounded-xl text-sm font-mono font-bold"
+                    placeholder="00XXXXXXXXXXXXX"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs font-bold text-slate-500">Adresse</Label>
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Adresse</Label>
                   <Input
                     value={form.address_street}
                     onChange={e => setForm({ ...form, address_street: e.target.value })}
-                    className="h-11 bg-slate-50 border-slate-200 rounded-xl text-sm"
+                    className="h-11 bg-slate-50 border-slate-200 rounded-xl text-sm font-bold"
                     placeholder="Rue / Avenue"
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-xs font-bold text-slate-500">Ville</Label>
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Ville</Label>
                   <Input
                     value={form.address_city}
                     onChange={e => setForm({ ...form, address_city: e.target.value })}
-                    className="h-11 bg-slate-50 border-slate-200 rounded-xl text-sm"
+                    className="h-11 bg-slate-50 border-slate-200 rounded-xl text-sm font-bold"
                     placeholder="Ouarzazate"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs font-bold text-slate-500">Pays</Label>
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Pays</Label>
                   <Input
                     value={form.address_country}
                     onChange={e => setForm({ ...form, address_country: e.target.value })}
-                    className="h-11 bg-slate-50 border-slate-200 rounded-xl text-sm"
+                    className="h-11 bg-slate-50 border-slate-200 rounded-xl text-sm font-bold"
                   />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label className="text-xs font-bold text-slate-500">Notes</Label>
+                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Notes Internes</Label>
                 <textarea
                   rows={3}
-                  className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm focus:ring-1 focus:ring-slate-900 focus:outline-none"
+                  className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm font-bold focus:ring-1 focus:ring-slate-900 focus:outline-none placeholder:font-normal"
                   value={form.notes}
                   onChange={e => setForm({ ...form, notes: e.target.value })}
-                  placeholder="Notes internes sur ce partenaire..."
+                  placeholder="Informations complémentaires..."
                 />
               </div>
               <DialogFooter className="pt-4">
-                <Button type="submit" className="w-full h-11 bg-slate-900 hover:bg-orange-600 text-white rounded-xl text-sm font-bold transition-all">
-                  <Save className="w-4 h-4 mr-2" /> Enregistrer
+                <Button type="submit" className="w-full h-12 bg-slate-900 hover:bg-orange-600 text-white rounded-xl text-sm font-black uppercase tracking-widest transition-all shadow-lg shadow-slate-900/10">
+                  <Save className="w-4 h-4 mr-2" /> Enregistrer le partenaire
                 </Button>
               </DialogFooter>
             </form>
           </DialogContent>
         </Dialog>
       </header>
-
+ 
       {/* DELETE ERROR */}
       {deleteError && (
-        <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 flex items-center space-x-3">
-          <AlertCircle className="w-5 h-5 text-rose-500 flex-shrink-0" />
-          <p className="text-sm text-rose-700 font-medium">{deleteError}</p>
-          <Button variant="ghost" size="sm" onClick={() => setDeleteError('')} className="ml-auto text-rose-500 hover:text-rose-700">Fermer</Button>
+        <div className="bg-rose-50 border border-rose-200 rounded-2xl p-6 flex flex-col md:flex-row items-center gap-4 text-center md:text-left">
+          <div className="w-12 h-12 bg-rose-100 rounded-2xl flex items-center justify-center shrink-0">
+             <AlertCircle className="w-6 h-6 text-rose-500" />
+          </div>
+          <div className="flex-1">
+             <p className="text-sm text-rose-900 font-bold uppercase tracking-tight">Action Impossible</p>
+             <p className="text-xs text-rose-700/70 font-medium leading-relaxed">{deleteError}</p>
+          </div>
+          <Button variant="ghost" size="sm" onClick={() => setDeleteError('')} className="text-[10px] font-black uppercase tracking-widest text-rose-500 hover:bg-rose-100">Ignorer</Button>
         </div>
       )}
-
+ 
       {/* SEARCH + COUNT */}
-      <div className="flex items-center gap-4">
+      <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4">
         <div className="relative flex-1">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <Input
             placeholder="Rechercher par nom, email ou téléphone..."
-            className="pl-11 h-11 bg-white border-slate-200 rounded-xl text-sm"
+            className="pl-11 h-12 bg-white border-slate-200 rounded-xl text-sm font-bold placeholder:text-slate-300 placeholder:font-medium shadow-sm transition-all focus:border-orange-500"
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
         </div>
-        <div className="bg-slate-900 text-white rounded-xl h-11 px-5 flex items-center space-x-2">
-          <Users className="w-4 h-4 text-orange-400" />
-          <span className="text-sm font-black tabular-nums">{clients.length}</span>
+        <div className="bg-white border border-slate-200 rounded-xl h-12 px-6 flex items-center justify-center space-x-3 shadow-sm shrink-0">
+          <div className="flex items-center -space-x-1.5 overflow-hidden">
+             <div className="w-6 h-6 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center"><Users className="w-2.5 h-2.5 text-slate-400" /></div>
+          </div>
+          <span className="text-xs font-black uppercase tracking-widest text-slate-500"><span className="text-slate-900">{filtered.length}</span> Partenaires</span>
         </div>
       </div>
 

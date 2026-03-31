@@ -462,31 +462,34 @@ export default function InvoiceBuilder({ initialData, isEdit = false }: Props) {
               {formData.items_json?.map((item, idx) => (
                 <motion.div key={idx} initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }}
                   className="bg-slate-50/50 rounded-xl p-4 border border-slate-100 group hover:border-slate-200 transition-all">
-                  <div className="grid grid-cols-12 gap-3 items-end">
-                    <div className="col-span-12 md:col-span-5 space-y-1">
-                      <Label className="text-[10px] font-bold text-slate-400">Description</Label>
+                  <div className="grid grid-cols-12 gap-x-2 gap-y-4 items-end">
+                    <div className="col-span-12 space-y-1">
+                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Description de la prestation</Label>
                       <Input value={item.description ?? ''} onChange={e => updateItem(idx, 'description', e.target.value)}
                         className="bg-white border-slate-200 h-10 rounded-lg text-sm" placeholder="Nature de la prestation" disabled={isLocked} />
                     </div>
-                    <div className="col-span-2 space-y-1">
-                      <Label className="text-[10px] font-bold text-slate-400">Qté</Label>
+                    <div className="col-span-4 md:col-span-1 space-y-1">
+                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Qté</Label>
                       <Input type="number" value={item.quantity ?? 0} onChange={e => updateItem(idx, 'quantity', parseInt(e.target.value) || 0)}
-                        className="bg-white border-slate-200 h-10 rounded-lg text-sm text-center" disabled={isLocked} />
+                        className="bg-white border-slate-200 h-10 rounded-lg text-sm text-center px-1" disabled={isLocked} />
                     </div>
-                    <div className="col-span-2 space-y-1">
-                      <Label className="text-[10px] font-bold text-slate-400">Pax</Label>
+                    <div className="col-span-4 md:col-span-1 space-y-1">
+                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pax</Label>
                       <Input type="number" value={item.nb_clients ?? 0} onChange={e => updateItem(idx, 'nb_clients', parseInt(e.target.value) || 0)}
-                        className="bg-white border-slate-200 h-10 rounded-lg text-sm text-center" disabled={isLocked} />
+                        className="bg-white border-slate-200 h-10 rounded-lg text-sm text-center px-1" disabled={isLocked} />
                     </div>
-                    <div className="col-span-3 space-y-1">
-                      <Label className="text-[10px] font-bold text-slate-400">Prix unit. ({formData.tva_mode === 'ht' ? 'HT' : 'TTC'})</Label>
+                    <div className="col-span-4 md:col-span-3 space-y-1">
+                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Prix unit. ({formData.tva_mode === 'ht' ? 'HT' : 'TTC'})</Label>
                       <Input type="number" step="0.01" value={item.unit_price ?? 0} onChange={e => updateItem(idx, 'unit_price', parseFloat(e.target.value) || 0)}
                         className="bg-white border-slate-200 h-10 rounded-lg text-sm text-right" disabled={isLocked} />
                     </div>
-                    <div className="col-span-12 md:col-span-2 flex items-end justify-between">
-                      <span className="text-sm font-bold text-slate-900 tabular-nums">{formatMAD(calcLineSubtotal(item.quantity, item.unit_price))}</span>
+                    <div className="col-span-12 md:col-span-2 flex items-center justify-between bg-slate-100/50 p-2 rounded-xl border border-slate-100">
+                      <div className="flex flex-col">
+                        <span className="text-[8px] font-black uppercase text-slate-400 tracking-tighter">Sous-total</span>
+                        <span className="text-sm font-black text-slate-900 tabular-nums leading-none">{formatMAD(calcLineSubtotal(item.quantity, item.unit_price))}</span>
+                      </div>
                       <Button variant="ghost" size="icon" onClick={() => removeItem(idx)} disabled={isLocked}
-                        className="w-8 h-8 rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 opacity-0 group-hover:opacity-100 transition-all">
+                        className="w-8 h-8 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-all">
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>
                     </div>

@@ -293,9 +293,9 @@ export default function AiInvoiceCreatorPage() {
         </Card>
       </div>
 
-      <div className="space-y-6 pt-4 lg:pt-20">
+      <div className="space-y-6 pt-12 lg:pt-20">
         {!result ? (
-          <div className="h-[550px] flex flex-col items-center justify-center p-12 text-center bg-slate-50/50 rounded-[2.5rem] border-2 border-dashed border-slate-200">
+          <div className="min-h-[400px] md:h-[550px] flex flex-col items-center justify-center p-8 md:p-12 text-center bg-slate-50/50 rounded-[2.5rem] border-2 border-dashed border-slate-200">
             <div className="w-16 h-16 bg-white rounded-3xl flex items-center justify-center shadow-sm mb-6">
               <TableIcon className="w-8 h-8 text-slate-200" />
             </div>
@@ -304,7 +304,7 @@ export default function AiInvoiceCreatorPage() {
           </div>
         ) : (
           <div className="space-y-6 animate-slide-up relative">
-            <div className="absolute -top-12 left-0 right-0 flex justify-between items-center px-2">
+            <div className="absolute -top-12 left-0 right-0 flex justify-between items-center px-4">
                <div>
                   <h3 className="text-lg font-black text-slate-900 uppercase">Aperçu Réel</h3>
                   <p className="text-[10px] font-bold text-orange-600 uppercase tracking-widest">Document Généré</p>
@@ -312,15 +312,17 @@ export default function AiInvoiceCreatorPage() {
                <Badge className="bg-emerald-50 text-emerald-600 border-none px-4 py-1.5 text-[10px] font-black uppercase tracking-widest shadow-sm">Prêt</Badge>
             </div>
             
-            <div className="rounded-[2.5rem] overflow-hidden shadow-2xl bg-slate-200 flex items-center justify-center pt-8 border border-slate-300 relative" style={{ height: '600px' }}>
-                <AiPreviewDoc data={result} isProforma={docType === 'proforma'} />
+            <div className="rounded-[2rem] md:rounded-[2.5rem] overflow-hidden shadow-2xl bg-slate-200 flex items-start justify-center pt-8 border border-slate-300 relative h-[500px] md:h-[600px]">
+                <div className="scale-[0.4] sm:scale-[0.55] origin-top">
+                  <AiPreviewDoc data={result} isProforma={docType === 'proforma'} />
+                </div>
             </div>
-
+ 
             <Button 
               onClick={handleConfirm}
               className="w-full h-16 shadow-xl bg-orange-600 hover:bg-orange-700 text-white rounded-[2rem] text-sm font-black uppercase tracking-widest transition-all"
             >
-              Créer la facture en un clic <ArrowRight className="w-5 h-5 ml-3" />
+              Envoyer vers le formulaire <ArrowRight className="w-5 h-5 ml-3" />
             </Button>
           </div>
         )}
