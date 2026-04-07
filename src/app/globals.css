@@ -120,51 +120,53 @@ body {
 }
 
 /* Printing logic refinement */
+/* Utility for hiding/showing elements during print */
+.print-only { display: none !important; }
+.no-print { display: block !important; }
+
 @media print {
+  .no-print { display: none !important; }
+  .print-only { display: block !important; }
+
   @page {
     size: 210mm 297mm;
     margin: 0;
   }
-  
-  /* Hide UI elements */
-  .no-print, 
-  header, 
-  [data-sidebar="sidebar"],
-  aside,
-  button,
-  nav { 
-    display: none !important; 
-  }
 
-  /* Reset layout */
   body, html {
     width: 210mm !important;
-    height: 297mm !important;
+    height: 100% !important; /* Lock to single page */
     margin: 0 !important;
     padding: 0 !important;
     background: #fff !important;
+    overflow: hidden !important; /* Prevent scroll/bleed to next page */
   }
 
-  #print-area {
+  body {
+    visibility: hidden !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  #print-area, #ai-print-area {
     visibility: visible !important;
     display: block !important;
     position: absolute !important;
     top: 0 !important;
     left: 0 !important;
-    margin: 0 !important;
     width: 210mm !important;
-    height: 297mm !important;
-    background: #fff !important;
-    z-index: 1000 !important;
-    box-shadow: none !important;
+    height: 296.5mm !important; /* Slight buffer to stay on 1 page */
+    background: white !important;
+    transform: none !important;
+    scale: 1 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
   }
 
-  /* Hide everything else */
-  body * {
-    visibility: hidden;
-  }
-  #print-area, #print-area * {
-    visibility: visible;
+  #print-area *, #ai-print-area * {
+    visibility: visible !important;
   }
 }
 

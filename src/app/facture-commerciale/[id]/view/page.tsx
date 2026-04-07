@@ -11,6 +11,7 @@ import {
   Printer,
   ChevronLeft,
   Send,
+  Download,
   CheckCircle2,
   History,
   FileText,
@@ -340,59 +341,38 @@ export default function ViewInvoicePage() {
     let newStatus = 'envoyée';
     if (totalPaid > 0 && totalPaid < totalTtc - 0.01) newStatus = 'partiellement_payée';
     if (totalPaid >= totalTtc - 0.01) newStatus = 'payée';
-    if (newStatus !== 'payée' && invoice?.due_date && isBefore(parseISO(invoice.due_date), startOfDay(new Date()))) newStatus = 'en_retard';
-
+    
     await supabase.from('invoices').update({ status: newStatus }).eq('id', params.id);
     await fetchData();
     setActionLoading(false);
   };
 
   const handleDownloadPDF = async () => {
-    const el = document.getElementById('print-area');
-    if (!el) return;
+    setActionLoading(true);
 
-    const html2canvas = (await import('html2canvas')).default;
-    const jsPDF = (await import('jspdf')).default;
-
-    // Pre-fetch all external images via our server-side proxy to avoid CORS
-    const imgEls = Array.from(el.querySelectorAll('img')) as HTMLImageElement[];
-    const origSrcs: string[] = [];
-    await Promise.all(imgEls.map(async (img, i) => {
-      origSrcs[i] = img.src;
-      try {
-        const proxyRes = await fetch(`/api/image-proxy?url=${encodeURIComponent(img.src)}`);
-        if (proxyRes.ok) {
-          const { base64, contentType } = await proxyRes.json();
-          img.src = `data:${contentType};base64,${base64}`;
-        } else {
-          img.style.visibility = 'hidden';
-        }
-      } catch {
-        img.style.visibility = 'hidden';
+    try {
+      const response = await fetch(`/api/pdf/generate?type=facture&id=${params.id}`);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erreur lors de la génération du PDF');
       }
-    }));
 
-    const canvas = await html2canvas(el, {
-      scale: 3,
-      useCORS: false,
-      allowTaint: true,
-      backgroundColor: '#ffffff',
-      width: el.offsetWidth,
-      height: el.offsetHeight,
-    });
-
-    // Restore original img srcs
-    imgEls.forEach((img, i) => {
-      img.src = origSrcs[i];
-      img.style.visibility = '';
-    });
-
-    const imgData = canvas.toDataURL('image/jpeg', 0.98);
-    const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
-    const pdfW = pdf.internal.pageSize.getWidth();
-    const pdfH = pdf.internal.pageSize.getHeight();
-    pdf.addImage(imgData, 'JPEG', 0, 0, pdfW, pdfH);
-    pdf.save(`Facture-${invoice?.invoice_number}.pdf`);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Facture-${invoice?.invoice_number || 'export'}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || 'Erreur lors de la génération du PDF');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   if (loading || !invoice) return (
@@ -408,12 +388,10 @@ export default function ViewInvoicePage() {
 
   return (
     <div className="max-w-6xl mx-auto pb-40 animate-slide-up flex flex-col lg:flex-row gap-8 px-4 md:px-0">
-      {/* LEFT: DOCUMENT */}
       <div className="flex-1 space-y-6 min-w-0">
-        {/* Top action bar */}
         <header className="no-print flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="icon" onClick={() => router.push('/f-commercial')} className="rounded-xl bg-white border border-slate-200 shadow-sm shrink-0">
+            <Button variant="ghost" size="icon" onClick={() => router.push('/facture-commerciale')} className="rounded-xl bg-white border border-slate-200 shadow-sm shrink-0">
               <ChevronLeft className="w-4 h-4" />
             </Button>
             <div>
@@ -437,16 +415,25 @@ export default function ViewInvoicePage() {
                 </Button>
               </div>
             )}
+            <Button variant="outline" className="rounded-xl h-10 px-4 text-[10px] font-black uppercase tracking-widest border-slate-200 bg-white shadow-sm shrink-0" onClick={handleDownloadPDF} disabled={actionLoading}>
+              <Download className="w-3.5 h-3.5 mr-2 text-slate-400" /> PDF
+            </Button>
             <Button variant="outline" size="icon" className="rounded-xl h-10 w-10 shrink-0 bg-white border-slate-200 shadow-sm" onClick={() => window.print()}>
               <Printer className="w-4 h-4 text-slate-600" />
             </Button>
           </div>
         </header>
 
-        {/* A4 Document - Scaling for Mobile */}
-        <div className="shadow-[0_20px_50px_-20px_rgba(0,0,0,0.15)] rounded-[2.5rem] overflow-hidden border border-slate-200 bg-slate-200 p-4 md:p-12 flex justify-center min-h-[500px] md:min-h-[1000px]">
+        <div className="no-print shadow-[0_20px_50px_-20px_rgba(0,0,0,0.15)] rounded-[2.5rem] overflow-hidden border border-slate-200 bg-slate-200 p-4 md:p-12 flex justify-center min-h-[500px] md:min-h-[1000px]">
           <div className="origin-top scale-[0.4] sm:scale-[0.5] md:scale-[0.8] lg:scale-100 transition-transform duration-500">
             <InvoicePrintDoc invoice={invoice} client={client} settings={settings} />
+          </div>
+        </div>
+
+        {/* 1:1 MIRROR FOR PRINT/EXPORT (Hidden from UI) */}
+        <div className="print-only">
+          <div id="print-area">
+             <InvoicePrintDoc invoice={invoice} client={client} settings={settings} />
           </div>
         </div>
       </div>

@@ -103,21 +103,25 @@ export default function InvoiceBuilder({ initialData, isEdit = false }: Props) {
         const aiDataRaw = sessionStorage.getItem('ai_invoice_data');
         if (aiDataRaw) {
           const aiData = JSON.parse(aiDataRaw);
+          // DEFENSIVE: Sanitize and cast all AI-generated data
           setFormData(prev => ({
             ...prev,
-            items_json: aiData.items.map((item: any) => ({
-              description: item.description,
-              quantity: item.quantity || 1,
-              nb_clients: item.nb_clients || 1,
-              unit_price: item.unit_price || 0,
-              subtotal: (item.quantity || 1) * (item.unit_price || 0)
-            })),
-            amount_words: aiData.amount_words || prev.amount_words,
-            notes: aiData.notes || prev.notes,
-            // Pre-fill manual client fields for the form
-            recipient_name: aiData.client_name || '',
-            recipient_ice: aiData.client_ice || '',
-            recipient_address: aiData.client_address || '',
+            items_json: (aiData.items || []).map((item: any) => {
+              const qty = parseFloat(String(item.quantity)) || 1;
+              const price = parseFloat(String(item.unit_price)) || 0;
+              return {
+                description: String(item.description || '').slice(0, 500).replace(/[<>]/g, ''), // Strip tags
+                quantity: qty,
+                nb_clients: parseInt(String(item.nb_clients)) || 1,
+                unit_price: price,
+                subtotal: qty * price
+              };
+            }),
+            amount_words: String(aiData.amount_words || '').toUpperCase().slice(0, 255),
+            notes: String(aiData.notes || '').slice(0, 1000),
+            recipient_name: String(aiData.client_name || '').slice(0, 100),
+            recipient_ice: String(aiData.client_ice || '').replace(/[^a-zA-Z0-9]/g, '').slice(0, 50),
+            recipient_address: String(aiData.client_address || '').slice(0, 200),
           }));
 
           // Match client
@@ -216,13 +220,13 @@ export default function InvoiceBuilder({ initialData, isEdit = false }: Props) {
 
   const handleSave = async () => {
     setSaving(true);
-    const { amount_words, ...validFormData } = formData;
     const dataToSave = {
-      ...validFormData,
+      ...formData,
       updated_at: new Date().toISOString(),
       subtotal_ht: totals.subtotal_ht,
       tva_amount: totals.tva_amount,
       total_ttc: totals.total_ttc,
+      amount_words: formData.amount_words || '',
       recipient_name: formData.recipient_name || selectedClient?.name || '',
       recipient_ice: formData.recipient_ice || selectedClient?.company_ice || '',
       recipient_address: formData.recipient_address || selectedClient?.address_street || '',
