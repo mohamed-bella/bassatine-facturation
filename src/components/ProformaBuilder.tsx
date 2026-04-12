@@ -266,13 +266,13 @@ export default function ProformaBuilder({ initialData, isEdit = false }: Props) 
 
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
     autoSaveTimer.current = setTimeout(async () => {
-      const { amount_words, ...validFormData } = formData;
       const dataToSave = {
-        ...validFormData,
+        ...formData,
         updated_at: new Date().toISOString(),
         subtotal_ht: totals.subtotal_ht,
         tva_amount: totals.tva_amount,
         total_ttc: totals.total_ttc,
+        amount_words: formData.amount_words || '',
         recipient_name: formData.recipient_name || selectedClient?.name || '',
         recipient_ice: formData.recipient_ice || selectedClient?.company_ice || '',
         recipient_address: formData.recipient_address || selectedClient?.address_street || '',
@@ -327,13 +327,13 @@ export default function ProformaBuilder({ initialData, isEdit = false }: Props) 
 
   const handleSave = async () => {
     setSaving(true);
-    const { amount_words, ...validFormData } = formData;
     const dataToSave = {
-      ...validFormData,
+      ...formData,
       updated_at: new Date().toISOString(),
       subtotal_ht: totals.subtotal_ht,
       tva_amount: totals.tva_amount,
       total_ttc: totals.total_ttc,
+      amount_words: formData.amount_words || '',
       recipient_name: formData.recipient_name || selectedClient?.name || '',
       recipient_ice: formData.recipient_ice || selectedClient?.company_ice || '',
       recipient_address: formData.recipient_address || selectedClient?.address_street || '',
@@ -555,18 +555,25 @@ export default function ProformaBuilder({ initialData, isEdit = false }: Props) 
             </CardContent>
           </Card>
 
-          {/* NOTES */}
+          {/* AMOUNT ITEMS + NOTES */}
           <Card className="border border-slate-100 rounded-2xl shadow-sm">
-            <CardContent className="p-6 space-y-2">
-              <Label className="text-xs font-bold text-slate-500">Notes</Label>
-              <textarea
-                rows={3}
-                className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm focus:ring-1 focus:ring-slate-900 focus:outline-none"
-                value={formData.notes || ''}
-                onChange={e => setFormData({ ...formData, notes: e.target.value })}
-                placeholder="Notes internes ou instructions..."
-                disabled={isLocked}
-              />
+            <CardContent className="p-6 space-y-4">
+              <div className="space-y-2">
+                <Label className="text-xs font-bold text-slate-500">Montant en toutes lettres</Label>
+                <Input value={formData.amount_words || ''} onChange={e => setFormData({ ...formData, amount_words: e.target.value })}
+                  className="h-11 bg-slate-50 border-slate-200 rounded-xl text-sm italic" placeholder="Arrêté le présent proforma à la somme de..." disabled={isLocked} />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-bold text-slate-500">Notes</Label>
+                <textarea
+                  rows={3}
+                  className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm focus:ring-1 focus:ring-slate-900 focus:outline-none"
+                  value={formData.notes || ''}
+                  onChange={e => setFormData({ ...formData, notes: e.target.value })}
+                  placeholder="Notes internes ou instructions..."
+                  disabled={isLocked}
+                />
+              </div>
             </CardContent>
           </Card>
         </section>
