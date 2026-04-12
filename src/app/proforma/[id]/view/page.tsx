@@ -23,7 +23,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   brouillon: { label: 'Brouillon', color: 'bg-slate-100 text-slate-500 border-slate-200' },
@@ -319,6 +319,14 @@ export default function ViewProformaPage() {
     }
   };
 
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 120);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   if (loading || !proforma) return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
       <Loader2 className="w-8 h-8 text-orange-600 animate-spin" />
@@ -332,7 +340,40 @@ export default function ViewProformaPage() {
 
   return (
     <>
-      <div id="proforma-view-root" className="max-w-6xl mx-auto pb-40 animate-slide-up flex flex-col lg:flex-row gap-8 px-4 md:px-0">
+      {/* STICKY FLOATING ACTIONS */}
+      <AnimatePresence>
+        {isScrolled && (
+          <motion.div 
+            initial={{ y: -100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -100, opacity: 0 }}
+            className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] w-fit no-print"
+          >
+            <div className="bg-white/80 backdrop-blur-xl border border-white/40 shadow-2xl rounded-2xl px-6 py-3 flex items-center gap-6">
+              <div className="flex items-center gap-3 border-r border-slate-200 pr-6">
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Actions Rapides</span>
+                <Badge className={`${statusInfo.color} text-[9px] font-black px-2`}>{statusInfo.label}</Badge>
+              </div>
+              <div className="flex items-center gap-3">
+                <Button variant="ghost" size="sm" onClick={() => window.print()} className="h-9 px-6 rounded-xl hover:bg-slate-50 text-[10px] font-black uppercase tracking-widest flex items-center">
+                  <Printer className="w-4 h-4 mr-2" /> Imprimer
+                </Button>
+                {proforma.status === 'brouillon' && (
+                  <Button size="sm" onClick={() => updateStatus('envoyé')} className="h-9 px-6 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-600/20">
+                    <Send className="w-3.5 h-3.5 mr-2" /> Envoyer
+                  </Button>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div id="proforma-view-root" className="max-w-6xl mx-auto pb-40 animate-slide-up flex flex-col lg:flex-row gap-8 px-4 md:px-0 relative">
+        {/* DECORATIVE BLOBS */}
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[30%] bg-orange-600/5 blur-[120px] rounded-full pointer-events-none -z-10" />
+        <div className="absolute bottom-[20%] right-[-5%] w-[30%] h-[40%] bg-blue-600/5 blur-[120px] rounded-full pointer-events-none -z-10" />
+
         <div className="flex-1 space-y-6 min-w-0">
           <header className="no-print flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             <div className="flex items-center space-x-4">
@@ -359,31 +400,32 @@ export default function ViewProformaPage() {
                 </div>
               )}
               <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                <Button variant="outline" className="rounded-xl h-10 px-4 text-[10px] font-black uppercase tracking-widest border-slate-200 bg-white shadow-sm shrink-0" onClick={handleDownloadPDF} disabled={actionLoading}>
-                  <Download className="w-3.5 h-3.5 mr-2 text-slate-400" /> PDF
-                </Button>
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                <Button variant="outline" size="icon" className="rounded-xl h-10 w-10 shrink-0 bg-white border-slate-200 shadow-sm" onClick={() => window.print()}>
-                  <Printer className="w-4 h-4 text-slate-600" />
+                <Button variant="outline" className="rounded-xl h-10 px-6 text-[10px] font-black uppercase tracking-widest border-slate-200 bg-white shadow-sm shrink-0" onClick={() => window.print()}>
+                  <Printer className="w-4 h-4 mr-2" /> Imprimer
                 </Button>
               </motion.div>
             </div>
           </header>
 
-          <div className="no-print shadow-[0_20px_50px_-20px_rgba(0,0,0,0.15)] rounded-[2.5rem] overflow-hidden border border-slate-200 bg-slate-200 p-4 md:p-12 flex justify-center min-h-[500px] md:min-h-[1000px]">
+          <motion.div 
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.7 }}
+            className="no-print shadow-[0_40px_100px_-20px_rgba(0,0,0,0.2)] rounded-[2.5rem] overflow-hidden border border-white/40 bg-white/20 backdrop-blur-md p-4 md:p-12 flex justify-center min-h-[500px] md:min-h-[1000px] hover:shadow-[0_50px_120px_-20px_rgba(0,0,0,0.25)] transition-shadow duration-700"
+          >
             <div className="origin-top scale-[0.4] sm:scale-[0.5] md:scale-[0.8] lg:scale-100 transition-transform duration-500">
               <ProformaPrintDoc proforma={proforma} client={client} settings={settings} />
             </div>
-          </div>
+          </motion.div>
         </div>
 
         <aside className="lg:w-80 space-y-5 no-print lg:sticky lg:top-8 h-fit">
-          <Card className="bg-slate-900 text-white rounded-[2rem] border-none overflow-hidden p-7 shadow-2xl">
-             <p className="text-[10px] font-bold uppercase text-white/30 tracking-[0.2em] mb-1">Estimation</p>
-             <h3 className="text-3xl font-black tabular-nums">{formatMAD(Number(proforma.total_ttc))} <span className="text-sm opacity-30">DH</span></h3>
-             <Separator className="bg-white/10 my-6" />
-
+          <Card className="bg-slate-900 text-white rounded-[2rem] border-none overflow-hidden p-7 space-y-7 shadow-2xl">
+            <div>
+              <p className="text-[10px] font-bold uppercase text-white/30 tracking-[0.2em] mb-1">Montant Estimé</p>
+              <h3 className="text-3xl font-black tabular-nums">{formatMAD(Number(proforma.total_ttc))} <span className="text-sm opacity-30">DH</span></h3>
+            </div>
+            
              {!proforma.linked_invoice_id ? (
                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                  <Button onClick={convertToInvoice} disabled={actionLoading} className="w-full bg-orange-600 hover:bg-orange-700 text-white h-14 rounded-2xl text-xs font-bold shadow-xl shadow-orange-600/20">
@@ -398,6 +440,20 @@ export default function ViewProformaPage() {
                   </Button>
                </Link>
              )}
+          </Card>
+
+          <Card className="border border-slate-100/50 rounded-[2rem] bg-white/60 backdrop-blur-xl p-6 shadow-sm">
+            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-4">Informations</h4>
+            <div className="space-y-4">
+              <div className="flex flex-col">
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Client</span>
+                <span className="text-xs font-bold text-slate-900">{client?.name || proforma.recipient_name}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Crée le</span>
+                <span className="text-xs font-bold text-slate-900">{format(parseISO(proforma.created_at), 'dd MMMM yyyy')}</span>
+              </div>
+            </div>
           </Card>
         </aside>
       </div>
