@@ -58,8 +58,18 @@
 }
 
 body {
-  background: radial-gradient(circle at top right, #fff5eb 0%, #ffffff 100%);
+  background: 
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.5), rgba(248, 250, 252, 0.7)),
+    url('https://bassatine-skoura.com/wp-content/uploads/2025/01/3fea9338-cc5b-4a5d-aa54-f7b20ec1880c.jpg');
+  background-attachment: fixed;
+  background-size: cover;
+  background-position: center;
   min-height: 100vh;
+}
+
+.active-click {
+  transform: scale(0.95);
+  transition: transform 0.1s ease;
 }
 
 @layer components {

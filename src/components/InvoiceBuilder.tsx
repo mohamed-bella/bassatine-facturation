@@ -267,7 +267,7 @@ export default function InvoiceBuilder({ initialData, isEdit = false }: Props) {
   const categoryLabels: Record<string, string> = { chambre: 'Chambres', service: 'Services', taxe: 'Taxes', autre: 'Autres' };
 
   return (
-    <div className="max-w-7xl mx-auto pb-40 animate-slide-up">
+    <div className="max-w-[1400px] mx-auto pb-40 px-4 md:px-10 animate-slide-up relative overflow-visible">
       {/* HEADER */}
       <header className="flex justify-between items-center mb-8">
         <div className="flex items-center space-x-4">
@@ -288,18 +288,20 @@ export default function InvoiceBuilder({ initialData, isEdit = false }: Props) {
             </Badge>
           )}
           {!isLocked && (
-            <Badge variant="outline" className="h-9 px-4 rounded-xl text-xs font-bold text-slate-400 border-slate-200">
+            <Badge variant="outline" className="h-9 px-4 rounded-xl text-xs font-bold text-slate-400 border-slate-200 bg-white/50 backdrop-blur-md">
               Brouillon
             </Badge>
           )}
-          <Button
-            onClick={handleSave}
-            disabled={saving || isLocked}
-            className="h-11 px-8 bg-slate-900 hover:bg-orange-600 text-white rounded-xl text-xs font-bold transition-all"
-          >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-            Enregistrer
-          </Button>
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.95 }}>
+            <Button
+              onClick={handleSave}
+              disabled={saving || isLocked}
+              className="h-11 px-8 bg-slate-900 hover:bg-orange-600 text-white rounded-xl text-xs font-black transition-all shadow-lg"
+            >
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+              ENREGISTRER
+            </Button>
+          </motion.div>
         </div>
       </header>
 
@@ -432,9 +434,11 @@ export default function InvoiceBuilder({ initialData, isEdit = false }: Props) {
               <div className="flex items-center space-x-2">
                 <Popover open={openCatalogPicker} onOpenChange={setOpenCatalogPicker}>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" size="sm" className="rounded-xl text-xs font-bold h-9" disabled={isLocked}>
-                      <Package className="w-3.5 h-3.5 mr-2" /> Catalogue
-                    </Button>
+                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                      <Button variant="outline" size="sm" className="rounded-xl text-[10px] font-black uppercase tracking-widest h-9 bg-white" disabled={isLocked}>
+                        <Package className="w-3.5 h-3.5 mr-2" /> Catalogue
+                      </Button>
+                    </motion.div>
                   </PopoverTrigger>
                   <PopoverContent className="w-[350px] p-0 rounded-xl shadow-lg border-slate-200" align="end">
                     <Command>
@@ -457,9 +461,11 @@ export default function InvoiceBuilder({ initialData, isEdit = false }: Props) {
                     </Command>
                   </PopoverContent>
                 </Popover>
-                <Button variant="outline" size="sm" className="rounded-xl text-xs font-bold h-9" onClick={addEmptyItem} disabled={isLocked}>
-                  <Plus className="w-3.5 h-3.5 mr-2" /> Ligne vide
-                </Button>
+                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <Button variant="outline" size="sm" className="rounded-xl text-[10px] font-black uppercase tracking-widest h-9 bg-white" onClick={addEmptyItem} disabled={isLocked}>
+                    <Plus className="w-3.5 h-3.5 mr-2" /> Ligne vide
+                  </Button>
+                </motion.div>
               </div>
             </CardHeader>
             <CardContent className="p-6 pt-0 space-y-3">

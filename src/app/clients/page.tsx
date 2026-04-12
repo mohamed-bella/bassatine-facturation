@@ -296,14 +296,12 @@ export default function ClientsPage() {
                   <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center border border-slate-100 group-hover:bg-orange-50 transition-colors">
                     <Building className="w-4 h-4 text-slate-400 group-hover:text-orange-600 transition-colors" />
                   </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="w-8 h-8 rounded-lg opacity-0 group-hover:opacity-100 transition-all">
-                        <MoreVertical className="w-4 h-4 text-slate-400" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="rounded-xl p-1 border-slate-200 shadow-lg bg-white w-44">
-                      <DropdownMenuItem
+                  <div className="flex items-center gap-1.5 transition-opacity">
+                    <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="w-8 h-8 rounded-lg bg-slate-50 hover:bg-white border border-transparent hover:border-slate-100 text-slate-400 hover:text-orange-600 shadow-sm transition-all"
                         onClick={() => {
                           setForm({
                             name: client.name,
@@ -318,21 +316,21 @@ export default function ClientsPage() {
                           setEditingClient(client);
                           setShowModal(true);
                         }}
-                        className="p-2 rounded-lg cursor-pointer text-sm"
                       >
-                        <Edit className="w-3.5 h-3.5 mr-2 text-slate-400" />
-                        Modifier
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator className="bg-slate-100 mx-1" />
-                      <DropdownMenuItem
+                        <Edit className="w-3.5 h-3.5" />
+                      </Button>
+                    </motion.div>
+                    <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="w-8 h-8 rounded-lg bg-slate-50 hover:bg-rose-50 border border-transparent hover:border-rose-100 text-slate-400 hover:text-rose-600 shadow-sm transition-all"
                         onClick={() => handleDelete(client.id)}
-                        className="p-2 rounded-lg cursor-pointer text-sm text-rose-600 focus:bg-rose-50 focus:text-rose-700"
                       >
-                        <Trash2 className="w-3.5 h-3.5 mr-2" />
-                        Supprimer
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </motion.div>
+                  </div>
                 </CardHeader>
 
                 <CardContent className="p-5 pt-2 space-y-3">

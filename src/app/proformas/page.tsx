@@ -32,6 +32,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { motion } from "framer-motion";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   brouillon: { label: 'Brouillon', color: 'bg-slate-100 text-slate-500 border-slate-200' },
@@ -102,16 +103,20 @@ export default function ProformasPage() {
           <p className="text-xs font-bold text-slate-400 mt-2">Gestion et suivi des devis officiels.</p>
         </div>
         <div className="flex items-center gap-3 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
-          <Button asChild variant="outline" className="shrink-0 h-11 px-6 border-slate-200 bg-white text-orange-600 hover:bg-orange-50 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm">
-            <Link href="/facture-commerciale/ai">
-              <Sparkles className="w-4 h-4 mr-2" /> <span className="hidden sm:inline">Générer via </span>IA
-            </Link>
-          </Button>
-          <Button asChild className="shrink-0 h-11 px-6 bg-slate-900 hover:bg-orange-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-xl shadow-slate-900/10">
-            <Link href="/proforma/new">
-              <Plus className="w-4 h-4 mr-2" /> Nouveau
-            </Link>
-          </Button>
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+            <Button asChild variant="outline" className="shrink-0 h-11 px-6 border-slate-200 bg-white text-orange-600 hover:bg-orange-50 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm">
+              <Link href="/facture-commerciale/ai">
+                <Sparkles className="w-4 h-4 mr-2" /> <span className="hidden sm:inline">Générer via </span>IA
+              </Link>
+            </Button>
+          </motion.div>
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+            <Button asChild className="shrink-0 h-11 px-6 bg-slate-900 hover:bg-orange-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-xl shadow-slate-900/10">
+              <Link href="/proforma/new">
+                <Plus className="w-4 h-4 mr-2" /> Nouveau
+              </Link>
+            </Button>
+          </motion.div>
         </div>
       </header>
 
@@ -203,35 +208,37 @@ export default function ProformasPage() {
                           <span className="text-[9px] font-black text-slate-400 uppercase leading-none mt-0.5">Dirhams (MAD)</span>
                         </div>
                       </TableCell>
-                      <TableCell className="py-5 px-6 text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="w-9 h-9 rounded-xl md:opacity-0 md:group-hover:opacity-100 transition-all border border-transparent hover:border-slate-200 hover:bg-white shadow-sm">
-                              <MoreHorizontal className="w-4 h-4 text-slate-400" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="rounded-2xl p-1.5 border-slate-200 shadow-2xl bg-white w-48">
-                            <DropdownMenuItem asChild className="p-2.5 rounded-xl cursor-pointer text-xs font-bold uppercase tracking-widest text-slate-600 focus:bg-slate-50 focus:text-slate-900">
-                              <Link href={`/proforma/${p.id}/view`} className="flex items-center">
-                                <Eye className="w-4 h-4 mr-3 text-slate-400" /> Consulter
+                      <TableCell className="py-5 px-6">
+                        <div className="flex items-center justify-end gap-2">
+                          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                            <Button asChild variant="ghost" size="icon" className="w-9 h-9 rounded-xl border border-slate-100 bg-white hover:bg-slate-50 text-slate-400 hover:text-slate-900 shadow-sm">
+                              <Link href={`/proforma/${p.id}/view`}>
+                                <Eye className="w-4 h-4" />
                               </Link>
-                            </DropdownMenuItem>
-                            {(p.status === 'brouillon' || p.status === 'envoyé') && (
-                              <DropdownMenuItem asChild className="p-2.5 rounded-xl cursor-pointer text-xs font-bold uppercase tracking-widest text-slate-600 focus:bg-slate-50 focus:text-slate-900">
-                                <Link href={`/proforma/${p.id}/edit`} className="flex items-center">
-                                  <Edit className="w-4 h-4 mr-3 text-slate-400" /> Éditer
+                            </Button>
+                          </motion.div>
+
+                          {(p.status === 'brouillon' || p.status === 'envoyé') && (
+                            <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                              <Button asChild variant="ghost" size="icon" className="w-9 h-9 rounded-xl border border-slate-100 bg-white hover:bg-slate-50 text-slate-400 hover:text-orange-600 shadow-sm">
+                                <Link href={`/proforma/${p.id}/edit`}>
+                                  <Edit className="w-4 h-4" />
                                 </Link>
-                              </DropdownMenuItem>
-                            )}
-                            <DropdownMenuSeparator className="bg-slate-100 my-1" />
-                            <DropdownMenuItem
+                              </Button>
+                            </motion.div>
+                          )}
+
+                          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
                               onClick={() => handleDelete(p.id)}
-                              className="p-2.5 rounded-xl cursor-pointer text-xs font-bold uppercase tracking-widest text-rose-600 focus:bg-rose-50 focus:text-rose-700"
+                              className="w-9 h-9 rounded-xl border border-slate-100 bg-white hover:bg-rose-50 text-slate-400 hover:text-rose-600 shadow-sm"
                             >
-                              <Trash2 className="w-4 h-4 mr-3" /> Supprimer
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </motion.div>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );

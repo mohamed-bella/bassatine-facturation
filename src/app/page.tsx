@@ -30,6 +30,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
+
 
 export default function Dashboard() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -78,26 +80,6 @@ export default function Dashboard() {
     return { monthSales, totalDue, totalPaid, openProformas };
   }, [invoices, proformas, payments]);
 
-  const arrivalsToday = useMemo(() => {
-    const today = new Date();
-    return invoices.filter(inv => {
-      const isToday = isSameDay(parseISO(inv.created_at), today);
-      const isRoom = (inv.items_json || []).some(item => {
-        const desc = (item.description || (item as any).desc || '').toLowerCase();
-        return desc.includes('chambre') || desc.includes('nuitée') || desc.includes('séjour');
-      });
-      return isToday && isRoom;
-    });
-  }, [invoices]);
-
-  const recentActivity = useMemo(() => {
-    const combined = [
-      ...invoices.map(inv => ({ ...inv, type: 'facture' as const })),
-      ...proformas.map(p => ({ ...p, type: 'proforma' as const })),
-    ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-    return combined.slice(0, 5);
-  }, [invoices, proformas]);
-
   if (loading) return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
       <div className="w-10 h-10 border-4 border-slate-100 border-t-orange-600 rounded-full animate-spin" />
@@ -106,146 +88,156 @@ export default function Dashboard() {
   );
 
   return (
-    <div className="space-y-12 animate-slide-up pb-24 max-w-6xl mx-auto px-4 md:px-8 mt-4">
+    <div className="space-y-12 pb-24 max-w-[1400px] mx-auto px-4 md:px-10 mt-6 relative overflow-visible">
+      
       {/* HEADER SECTION */}
-      <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 relative z-10">
-        <div className="space-y-1">
-          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-white border border-slate-200 mb-4 shadow-sm">
+      <motion.header 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-8 relative z-10"
+      >
+        <div className="space-y-2">
+          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-white/40 backdrop-blur-md border border-white/40 mb-2 shadow-sm">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Système opérationnel</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-600">Système opérationnel</span>
           </div>
-          <h1 className="text-3xl md:text-5xl font-black tracking-tighter text-slate-900 leading-none group">
-            <span className="inline-block transition-transform group-hover:scale-105 duration-500">Bonjour, Bassatine.</span>
-          </h1>
-          <p className="text-[11px] md:text-sm font-bold text-slate-400 mt-2 uppercase tracking-widest">Aperçu et gestion de vos activités récentes.</p>
+          <motion.h1 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="text-4xl md:text-6xl font-black tracking-tight text-slate-900 leading-none"
+          >
+            Bonjour, <span className="text-orange-600">Bassatine.</span>
+          </motion.h1>
+          <p className="text-xs md:text-sm font-bold text-slate-500/80 uppercase tracking-widest">Contrôle et pilotage de la gestion de luxe.</p>
         </div>
-        <div className="flex items-center gap-3 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
-           <Link href="/backup" className="shrink-0 grow md:grow-0">
-              <Button variant="outline" className="w-full h-12 px-6 rounded-2xl text-xs font-black border-slate-200 bg-white hover:bg-slate-50 transition-all shadow-md">
-                 <FileSpreadsheet className="w-4 h-4 mr-2 text-slate-400" /> <span className="hidden sm:inline">Sauvegardes</span><span className="sm:hidden">Archives</span>
-              </Button>
+        
+        <div className="flex items-center gap-4 w-full lg:w-auto overflow-x-auto pb-2 scrollbar-hide">
+           <Link href="/backup">
+              <motion.button 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="h-14 px-8 rounded-2xl text-[11px] font-black border border-white/40 bg-white/60 backdrop-blur-md text-slate-900 hover:bg-white hover:shadow-xl transition-all flex items-center shadow-lg cursor-pointer"
+              >
+                 <FileSpreadsheet className="w-4 h-4 mr-2 text-slate-400" /> SYNC & BACKUP
+              </motion.button>
            </Link>
-           <Link href="/facture-commerciale/new" className="shrink-0 grow md:grow-0">
-              <Button className="w-full h-12 px-6 bg-slate-900 hover:bg-orange-600 text-white rounded-2xl text-xs font-black transition-all shadow-xl shadow-slate-900/10 border border-slate-800">
-                 <Plus className="w-4 h-4 mr-2" /> Créer <span className="hidden sm:inline">Facture</span>
-              </Button>
+           <Link href="/facture-commerciale/new">
+              <motion.button 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="h-14 px-8 bg-slate-900 hover:bg-orange-600 text-white rounded-2xl text-[11px] font-black transition-all shadow-2xl flex items-center border border-slate-800 cursor-pointer"
+              >
+                 <Plus className="w-4 h-4 mr-2" /> NOUVELLE FACTURE
+              </motion.button>
            </Link>
         </div>
-      </header>
- 
-      {/* KPI GRID - SOLID WHITE CARDS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
+      </motion.header>
+
+      {/* KPI GRID - GLASS CARDS */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
          {[
-           { label: 'C.A (Mois)', value: formatMAD(stats.monthSales), color: 'text-blue-600', bg: 'bg-blue-50', icon: TrendingUp, iconColor: 'text-blue-500' },
-           { label: 'Total Encaissé', value: formatMAD(stats.totalPaid), color: 'text-emerald-600', bg: 'bg-emerald-50', icon: CheckCircle2, iconColor: 'text-emerald-500' },
-           { label: 'À percevoir', value: formatMAD(stats.totalDue), color: 'text-rose-600', bg: 'bg-rose-50', icon: AlertTriangle, iconColor: 'text-rose-500' },
-           { label: 'F. Proforma Actifs', value: stats.openProformas, color: 'text-orange-600', bg: 'bg-orange-50', icon: FileText, iconColor: 'text-orange-500', isNumber: true },
+           { label: 'C.A (Mois)', value: formatMAD(stats.monthSales), color: 'text-blue-600', bg: 'bg-blue-500/10', icon: TrendingUp, iconColor: 'text-blue-600' },
+           { label: 'Total Encaissé', value: formatMAD(stats.totalPaid), color: 'text-emerald-600', bg: 'bg-emerald-500/10', icon: CheckCircle2, iconColor: 'text-emerald-600' },
+           { label: 'À percevoir', value: formatMAD(stats.totalDue), color: 'text-rose-600', bg: 'bg-rose-500/10', icon: AlertTriangle, iconColor: 'text-rose-600' },
+           { label: 'F. Proforma Actifs', value: stats.openProformas, color: 'text-orange-600', bg: 'bg-orange-500/10', icon: FileText, iconColor: 'text-orange-600', isNumber: true },
          ].map((stat, i) => {
            const Icon = stat.icon;
            return (
-             <div key={i} className="relative p-8 rounded-[2.5rem] bg-white border border-slate-200 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] overflow-hidden group hover:shadow-2xl hover:shadow-slate-200 transition-all duration-500">
+             <motion.div 
+               key={i} 
+               initial={{ opacity: 0, y: 20 }}
+               animate={{ opacity: 1, y: 0 }}
+               transition={{ delay: i * 0.1 }}
+               whileHover={{ y: -8, scale: 1.02 }}
+               className="relative p-8 rounded-[2.5rem] bg-white/60 backdrop-blur-xl border border-white/60 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.1)] overflow-hidden group"
+             >
                 <div className="flex justify-between items-start mb-8 relative z-10">
-                   <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${stat.bg} shadow-inner`}>
+                   <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${stat.bg} backdrop-blur-md`}>
                       <Icon className={`w-6 h-6 ${stat.iconColor}`} />
                    </div>
-                   {!stat.isNumber && <Badge variant="outline" className="border-slate-100 text-slate-300 font-black bg-slate-50 text-[9px] uppercase tracking-widest px-2">MAD</Badge>}
+                   {!stat.isNumber && <Badge className="bg-white/40 text-slate-400 font-bold text-[9px] uppercase tracking-widest px-2 backdrop-blur-md">MAD</Badge>}
                 </div>
                 <div className="relative z-10">
-                   <p className="text-[10px] md:text-[11px] font-black text-slate-400 uppercase tracking-[0.15em] mb-2">{stat.label}</p>
-                   <h4 className={cn("text-3xl md:text-3xl font-black tabular-nums tracking-tighter", stat.color)}>
+                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">{stat.label}</p>
+                   <h4 className={cn("text-3xl font-black tabular-nums tracking-tighter leading-none", stat.color)}>
                       {stat.value}
                    </h4>
                 </div>
-             </div>
+             </motion.div>
            );
          })}
       </div>
- 
-      <div className="space-y-10 pt-6">
-         <div className="flex items-center justify-between">
-            <h3 className="text-xl md:text-2xl font-black text-slate-900 tracking-tighter flex items-center">
-               <Grid className="w-5 h-5 md:w-6 md:h-6 mr-3 md:mr-4 text-orange-600" />
-               Actions Rapides
+
+      <div className="space-y-10">
+         <div className="flex items-center justify-between px-2">
+            <h3 className="text-2xl font-black text-slate-900 tracking-tighter flex items-center">
+               <Grid className="w-7 h-7 mr-4 text-orange-600" />
+               Actions Stratégiques
             </h3>
          </div>
- 
-         {/* COLORFUL BENTO GRID - REIMAGINED AS SOLID WHITE CARDS */}
-         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 md:gap-8 auto-rows-fr md:auto-rows-[160px]">
+
+         {/* COLORFUL BENTO GRID - GLASSMORPHISM EDITION */}
+         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 auto-rows-[220px]">
             
-            {/* AI Generation - Large White Highlight */}
-            <Link href="/facture-commerciale/ai" className="md:col-span-2 md:row-span-2 group relative overflow-hidden rounded-[2.5rem] md:rounded-[3.5rem] bg-white p-10 md:p-12 flex flex-col justify-between border-2 border-orange-100 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.05)] hover:shadow-2xl transition-all duration-500 min-h-[300px] md:min-h-0">
-               <div className="absolute top-0 right-0 w-48 h-48 md:w-64 md:h-64 bg-orange-50/50 rounded-full blur-3xl -mr-20 -mt-20 group-hover:scale-110 transition-transform duration-700"></div>
-               <div className="w-16 h-16 bg-orange-600 rounded-[1.5rem] flex items-center justify-center shadow-xl shadow-orange-600/20 group-hover:scale-110 transition-all duration-500 z-10">
-                  <Sparkles className="w-8 h-8 text-white" />
-               </div>
-               <div className="z-10 mt-12 md:mt-auto">
-                  <h4 className="text-slate-900 font-black text-3xl md:text-5xl transition-colors tracking-tight leading-none mb-4">IA Billing</h4>
-                  <p className="text-slate-400 text-sm md:text-base font-bold tracking-tight leading-relaxed max-w-sm">Dictez vos ventes en langage naturel et générez vos PDF instantanément.</p>
-               </div>
-            </Link>
- 
-            {/* Listes - Clean white tiles */}
-            <Link href="/f-commercial" className="md:col-span-1 group rounded-[2.5rem] md:rounded-[3rem] bg-white p-8 md:p-10 flex flex-col justify-between hover:shadow-2xl transition-all shadow-sm border border-slate-200 min-h-[180px]">
-               <div className="w-12 h-12 bg-blue-50 rounded-[1.2rem] flex items-center justify-center group-hover:bg-blue-600 transition-all">
-                  <FolderOpen className="w-6 h-6 text-blue-600 group-hover:text-white" />
-               </div>
-               <div>
-                  <p className="text-slate-400 text-[9px] font-black uppercase tracking-widest mb-2 leading-none">Archive</p>
-                  <h4 className="text-slate-900 font-black text-sm md:text-base leading-tight uppercase group-hover:text-blue-600 transition-colors tracking-tighter">Factures Commerciales</h4>
-               </div>
-            </Link>
- 
-            <Link href="/proformas" className="md:col-span-1 group rounded-[2.5rem] md:rounded-[3rem] bg-white p-8 md:p-10 flex flex-col justify-between hover:shadow-2xl transition-all shadow-sm border border-slate-200 min-h-[180px]">
-               <div className="w-12 h-12 bg-emerald-50 rounded-[1.2rem] flex items-center justify-center group-hover:bg-emerald-600 transition-all">
-                  <FolderOpen className="w-6 h-6 text-emerald-600 group-hover:text-white" />
-               </div>
-               <div>
-                  <p className="text-slate-400 text-[9px] font-black uppercase tracking-widest mb-2 leading-none">Archive</p>
-                  <h4 className="text-slate-900 font-black text-sm md:text-base leading-tight uppercase group-hover:text-emerald-600 transition-colors tracking-tighter">Factures Proformas</h4>
-               </div>
-            </Link>
- 
-            {/* Create Actions */}
-            <Link href="/facture-commerciale/new" className="group rounded-[2.5rem] md:rounded-[3rem] bg-white p-8 md:p-10 flex flex-col justify-between hover:shadow-2xl transition-all shadow-sm border border-slate-200 min-h-[180px]">
-               <div className="w-12 h-12 bg-slate-50 rounded-[1.2rem] flex items-center justify-center group-hover:bg-orange-600 transition-all">
-                  <Plus className="w-6 h-6 text-slate-500 group-hover:text-white" />
-               </div>
-               <div>
-                  <p className="text-slate-400 text-[9px] font-black uppercase tracking-widest mb-2 leading-none">Nouveau</p>
-                  <h4 className="text-slate-900 font-black text-sm md:text-base leading-tight uppercase group-hover:text-orange-600 transition-colors tracking-tighter">Facture Commerciale</h4>
-               </div>
-            </Link>
- 
-            <Link href="/proforma/new" className="group rounded-[2.5rem] md:rounded-[3rem] bg-white p-8 md:p-10 flex flex-col justify-between hover:shadow-2xl transition-all shadow-sm border border-slate-200 min-h-[180px]">
-               <div className="w-12 h-12 bg-slate-50 rounded-[1.2rem] flex items-center justify-center group-hover:bg-slate-900 transition-all">
-                  <Plus className="w-6 h-6 text-slate-500 group-hover:text-white" />
-               </div>
-               <div>
-                  <p className="text-slate-400 text-[9px] font-black uppercase tracking-widest mb-2 leading-none">Nouveau</p>
-                  <h4 className="text-slate-900 font-black text-sm md:text-base leading-tight uppercase group-hover:text-slate-900 transition-colors tracking-tighter">Facture Proforma</h4>
-               </div>
-            </Link>
- 
-            <Link href="/clients" className="md:col-span-2 group rounded-[2.5rem] md:rounded-[3rem] bg-white p-8 md:p-10 flex flex-col justify-between hover:shadow-2xl transition-all shadow-sm border border-slate-200 min-h-[180px]">
-               <div className="w-12 h-12 bg-pink-50 rounded-[1.2rem] flex items-center justify-center group-hover:bg-pink-600 transition-all">
-                  <Users className="w-6 h-6 text-pink-600 group-hover:text-white" />
-               </div>
-               <div>
-                  <p className="text-slate-400 text-[9px] font-black uppercase tracking-widest mb-2 leading-none">Partenaires</p>
-                  <h4 className="text-slate-900 font-black text-sm md:text-base leading-tight uppercase group-hover:text-pink-600 transition-colors tracking-tighter">Agences Clients</h4>
-               </div>
-            </Link>
- 
-            <Link href="/catalog" className="md:col-span-2 group rounded-[2.5rem] md:rounded-[3rem] bg-white p-8 md:p-10 flex flex-col justify-between hover:shadow-2xl transition-all shadow-sm border border-slate-200 min-h-[180px]">
-               <div className="w-12 h-12 bg-cyan-50 rounded-[1.2rem] flex items-center justify-center group-hover:bg-cyan-600 transition-all">
-                  <Bed className="w-6 h-6 text-cyan-600 group-hover:text-white" />
-               </div>
-               <div>
-                  <p className="text-slate-400 text-[9px] font-black uppercase tracking-widest mb-2 leading-none">Chambres</p>
-                  <h4 className="text-slate-900 font-black text-sm md:text-base leading-tight uppercase group-hover:bg-cyan-600 transition-colors tracking-tighter">Services & Catalogue</h4>
-               </div>
-            </Link>
- 
+            {/* AI Generation - Large Highlight Card */}
+            <motion.div
+               whileHover={{ scale: 1.01 }}
+               whileTap={{ scale: 0.98 }}
+               className="md:col-span-2 md:row-span-2 group relative overflow-hidden rounded-[3rem] bg-slate-900 shadow-2xl shadow-slate-900/40"
+            >
+               <Link href="/facture-commerciale/ai" className="absolute inset-0 block">
+                  <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-orange-600/20 rounded-full blur-[100px] -mr-40 -mt-40 group-hover:scale-125 transition-transform duration-1000"></div>
+                  <div className="absolute inset-0 p-12 flex flex-col justify-between z-10">
+                     <div className="w-20 h-20 bg-orange-600 rounded-[2rem] flex items-center justify-center shadow-2xl shadow-orange-600/40 group-hover:rotate-12 transition-all duration-700">
+                        <Sparkles className="w-10 h-10 text-white" />
+                     </div>
+                     <div>
+                        <Badge className="bg-orange-500/20 text-orange-400 font-black text-[10px] tracking-widest mb-4 py-1 px-4 rounded-full backdrop-blur-xl">INTELLIGENCE ARTIFICIELLE</Badge>
+                        <h4 className="text-white font-black text-4xl lg:text-6xl tracking-tighter leading-none mb-6">IA Billing Pro</h4>
+                        <p className="text-slate-400 text-lg font-medium leading-relaxed max-w-md">Dictez vos ventes en langage naturel et générez vos PDF instantanément.</p>
+                     </div>
+                  </div>
+               </Link>
+            </motion.div>
+
+            {/* Listes - Glass Tiles */}
+            {[
+               { href: '/f-commercial', label: 'Archive', title: 'Factures Commerciales', icon: FolderOpen, color: 'blue' },
+               { href: '/proformas', label: 'Archive', title: 'Factures Proformas', icon: FolderOpen, color: 'emerald' },
+               { href: '/facture-commerciale/new', label: 'Générer', title: 'Nouveau Document', icon: Plus, color: 'orange' },
+               { href: '/proforma/new', label: 'Générer', title: 'Nouvelle Proforma', icon: Plus, color: 'slate' },
+               { href: '/clients', label: 'Partenaires', title: 'Agences & Clients', icon: Users, color: 'pink', span: 'col-span-1 lg:col-span-2' },
+               { href: '/catalog', label: 'Rooms', title: 'Catalogue Hébergement', icon: Bed, color: 'cyan', span: 'col-span-1 lg:col-span-2' },
+            ].map((item, i) => {
+               const Icon = item.icon;
+               const colorClass: any = {
+                  blue: 'text-blue-600 bg-blue-500/10',
+                  emerald: 'text-emerald-600 bg-emerald-500/10',
+                  orange: 'text-orange-600 bg-orange-500/10',
+                  slate: 'text-slate-600 bg-slate-500/10',
+                  pink: 'text-pink-600 bg-pink-500/10',
+                  cyan: 'text-cyan-600 bg-cyan-500/10',
+               };
+               
+               return (
+                  <motion.div
+                    key={i}
+                    whileHover={{ y: -5, backgroundColor: 'rgba(255,255,255,0.8)' }}
+                    whileTap={{ scale: 0.95 }}
+                    className={cn(item.span || "", "group rounded-[2.5rem] bg-white/60 backdrop-blur-xl p-8 lg:p-10 flex flex-col justify-between hover:shadow-2xl transition-all border border-white/60 cursor-pointer overflow-hidden")}
+                  >
+                     <Link href={item.href} className="flex flex-col h-full justify-between">
+                        <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-300", colorClass[item.color])}>
+                           <Icon className="w-7 h-7" />
+                        </div>
+                        <div>
+                           <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mb-2">{item.label}</p>
+                           <h4 className="text-slate-900 font-black text-lg leading-tight uppercase tracking-tighter group-hover:text-orange-600 transition-colors">{item.title}</h4>
+                        </div>
+                     </Link>
+                  </motion.div>
+               );
+            })}
          </div>
       </div>
     </div>

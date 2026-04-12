@@ -12,7 +12,6 @@ import {
   ChevronLeft,
   Send,
   Download,
-  CheckCircle2,
   XCircle,
   FileText,
   ArrowRight,
@@ -20,10 +19,11 @@ import {
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { motion } from "framer-motion";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   brouillon: { label: 'Brouillon', color: 'bg-slate-100 text-slate-500 border-slate-200' },
@@ -32,7 +32,6 @@ const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   'refusé': { label: 'Refusé', color: 'bg-rose-50 text-rose-600 border-rose-200' },
 };
 
-// Emits exactly the invoice PDF layout from the template, just titled 'FACTURE PROFORMA' without a stamp
 function ProformaPrintDoc({ proforma, client, settings }: { proforma: Proforma; client: Client | null; settings: Settings | null }) {
   const docTitle = 'FACTURE PROFORMA';
   const docNum = proforma.proforma_number?.startsWith('FAC-PROFORMA-') 
@@ -44,7 +43,6 @@ function ProformaPrintDoc({ proforma, client, settings }: { proforma: Proforma; 
   const subtotalHt = Number(proforma.subtotal_ht || 0);
   const tvaAmount = Number(proforma.tva_amount || 0);
 
-  // Pad table to at least 8 rows
   const items = proforma.items_json || [];
   const emptyRowCount = Math.max(0, 8 - items.length);
 
@@ -58,160 +56,186 @@ function ProformaPrintDoc({ proforma, client, settings }: { proforma: Proforma; 
   ].filter(Boolean).join(' • ');
 
   return (
-    <div
-      id="print-area"
-      style={{
-        fontFamily: 'Arial, Helvetica, sans-serif',
-        fontSize: '11px',
-        color: '#000',
-        background: '#fff',
-        width: '210mm',
-        minHeight: '297mm',
-        padding: '12mm 14mm',
-        boxSizing: 'border-box',
-        position: 'relative',
-      }}
-    >
-      {/* ─── HEADER ─────────────────────────────────────────── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6mm' }}>
-        <div>
-          {s?.logo_url ? (
-            <img src={s.logo_url} alt="Logo" style={{ height: '50px', marginBottom: '4px', objectFit: 'contain' }} />
-          ) : (
-            <div style={{ width: '60px', height: '50px', background: '#f1f5f9', borderRadius: '6px', marginBottom: '4px' }} />
+    <>
+      <style dangerouslySetInnerHTML={{ __html: `
+        @page {
+          size: A4;
+          margin: 0;
+        }
+        @media print {
+          body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #fff !important;
+            -webkit-print-color-adjust: exact;
+          }
+          .print-only {
+            display: block !important;
+            visibility: visible !important;
+          }
+          #proforma-view-root {
+            display: none !important;
+          }
+        }
+      `}} />
+      <div
+        id="print-area"
+        className="print-document"
+        style={{
+          fontFamily: 'Arial, Helvetica, sans-serif',
+          fontSize: '12.5px',
+          color: '#000',
+          background: '#fff',
+          width: '210mm',
+          height: '297mm',
+          display: 'flex',
+          flexDirection: 'column',
+          position: 'relative',
+        }}
+      >
+        <div style={{ padding: '12mm 18mm 12mm 12mm', flex: 1, position: 'relative' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8mm' }}>
+            <div>
+              {s?.logo_url ? (
+                <img src={s.logo_url} alt="Logo" style={{ height: '60px', marginBottom: '6px', objectFit: 'contain' }} />
+              ) : (
+                <div style={{ width: '70px', height: '60px', background: '#f1f5f9', borderRadius: '8px', marginBottom: '6px' }} />
+              )}
+              <div style={{ fontWeight: 'bold', fontSize: '15px', marginTop: '8px' }}>{s?.company_name || 'BOUMHCHAD SARL AU'}</div>
+              <div style={{ fontWeight: 'bold', fontSize: '12px', color: '#333' }}>{s?.company_sub_name || 'BASSATINE SKOURA'}</div>
+              <div style={{ fontSize: '11px', color: '#444' }}>{s?.company_address || 'Douar Boumhchad Skoura – Ouarzazate'}</div>
+              <div style={{ fontSize: '11px', color: '#444' }}>{s?.company_phone || '06 23 34 99 51 – 06 61 70 99 20'}</div>
+            </div>
+            <div style={{ textAlign: 'right', fontSize: '12px' }}>
+              <span>OUARZAZATE LE : </span>
+              <strong style={{ fontSize: '13px' }}>{dateStr}</strong>
+            </div>
+          </div>
+
+          <div style={{ fontWeight: 'bold', fontSize: '19px', margin: '8mm 0 6mm', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #000', paddingBottom: '4px', display: 'inline-block' }}>
+            {docTitle} N° : {docNum}
+          </div>
+
+          <div style={{ marginBottom: '8mm', fontSize: '14px' }}>
+            <div style={{ marginBottom: '5px' }}>
+              <span style={{ color: '#2563eb', fontWeight: 'bold' }}>DOIT :</span>
+              <span style={{ fontWeight: 'bold', marginLeft: '10px', fontSize: '15px' }}>{client?.name || proforma?.recipient_name || '—'}</span>
+            </div>
+            <div>
+              <span style={{ color: '#2563eb', fontWeight: 'bold' }}>ICE :</span>
+              <span style={{ fontWeight: 'bold', marginLeft: '20px' }}>{client?.company_ice || proforma?.recipient_ice || '—'}</span>
+            </div>
+          </div>
+
+          <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '8mm', fontSize: '12.5px' }}>
+            <thead>
+              <tr style={{ background: '#f0f0f0' }}>
+                {[
+                  { label: 'DÉSIGNATION', w: '40%', align: 'left' as const },
+                  { label: 'NB\nCHAMBRES', w: '12%', align: 'center' as const },
+                  { label: 'NB\nCLIENTS', w: '12%', align: 'center' as const },
+                  { label: 'P.U (DH)', w: '18%', align: 'center' as const },
+                  { label: 'TOTAL\nTTC', w: '18%', align: 'center' as const },
+                ].map((col, i) => (
+                  <th key={i} style={{
+                    border: '1.5px solid #000',
+                    padding: '8px 5px',
+                    fontWeight: 'bold',
+                    fontSize: '11px',
+                    textAlign: col.align,
+                    width: col.w,
+                    whiteSpace: 'pre-line',
+                    textTransform: 'uppercase',
+                  }}>
+                    {col.label}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((item: any, i: number) => {
+                const desc = item.description || (item as any).desc || '';
+                const qty = item.quantity || (item as any).qty || 0;
+                const nbClients = item.nb_clients ?? (item as any).nb_clients ?? '';
+                const price = item.unit_price || (item as any).price || 0;
+                const total = calcLineSubtotal(qty, price);
+                return (
+                  <tr key={i}>
+                    <td style={{ border: '1px solid #ccc', padding: '5px 7px' }}>{desc}</td>
+                    <td style={{ border: '1px solid #ccc', padding: '5px', textAlign: 'center', fontWeight: qty ? 'bold' : 'normal', color: qty ? '#c2410c' : '#000' }}>{qty || ''}</td>
+                    <td style={{ border: '1px solid #ccc', padding: '5px', textAlign: 'center', color: nbClients ? '#c2410c' : '#000', fontWeight: nbClients ? 'bold' : 'normal' }}>{nbClients}</td>
+                    <td style={{ border: '1px solid #ccc', padding: '5px', textAlign: 'right' }}>{price ? formatMAD(price) : ''}</td>
+                    <td style={{ border: '1px solid #ccc', padding: '5px', textAlign: 'right' }}>{total ? formatMAD(total) : ''}</td>
+                  </tr>
+                );
+              })}
+              {Array.from({ length: emptyRowCount }).map((_, i) => (
+                <tr key={`e-${i}`} style={{ height: '22px' }}>
+                  <td style={{ border: '1px solid #ccc', padding: '5px' }}>&nbsp;</td>
+                  <td style={{ border: '1px solid #ccc' }}></td>
+                  <td style={{ border: '1px solid #ccc' }}></td>
+                  <td style={{ border: '1px solid #ccc' }}></td>
+                  <td style={{ border: '1px solid #ccc' }}></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '6mm' }}>
+            <table style={{ width: '240px', borderCollapse: 'collapse', fontSize: '11px' }}>
+              <tbody>
+                {[
+                  { label: 'TOTAL TTC', value: formatMAD(totalTtc) + ' DH', bold: true },
+                  { label: 'TOTAL HT', value: formatMAD(subtotalHt) + ' DH', bold: false },
+                  { label: 'DONT TVA 10%', value: formatMAD(tvaAmount) + ' DH', bold: false },
+                ].map((row, i) => (
+                  <tr key={i}>
+                    <td style={{ border: '1px solid #ccc', padding: '5px 8px', fontWeight: row.bold ? 'bold' : 'normal', minWidth: '100px' }}>{row.label}</td>
+                    <td style={{ border: '1px solid #ccc', padding: '5px 12px', textAlign: 'right', fontWeight: row.bold ? 'bold' : 'normal', whiteSpace: 'nowrap' }}>{row.value}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {proforma.notes && (
+            <div style={{ marginBottom: '8mm', fontSize: '11px' }}>
+              <div style={{ fontStyle: 'italic', fontSize: '10px', color: '#555', marginTop: '6px' }}>Notes :</div>
+              <div style={{ whiteSpace: 'pre-line', marginTop: '4px' }}>{proforma.notes}</div>
+            </div>
           )}
-          <div style={{ fontWeight: 'bold', fontSize: '13px', marginTop: '6px' }}>{s?.company_name || 'BOUMHCHAD SARL AU'}</div>
-          <div style={{ fontWeight: 'bold', fontSize: '11px', color: '#555' }}>{s?.company_sub_name || 'BASSATINE SKOURA'}</div>
-          <div style={{ fontSize: '10px', color: '#444' }}>{s?.company_address || 'Douar Boumhchad Skoura – Ouarzazate'}</div>
-          <div style={{ fontSize: '10px', color: '#444' }}>{s?.company_phone || '06 23 34 99 51 – 06 61 70 99 20'}</div>
-        </div>
-        <div style={{ textAlign: 'right', fontSize: '11px' }}>
-          <span>OUARZAZATE LE : </span>
-          <strong>{dateStr}</strong>
+
+          {s?.stamp_url && (
+            <div style={{
+              position: 'absolute',
+              bottom: '10mm',
+              right: '12mm',
+              textAlign: 'center',
+            }}>
+              <img src={s.stamp_url} alt="Cachet" style={{ height: '110px', opacity: 1, mixBlendMode: 'multiply', objectFit: 'contain' }} />
+            </div>
+          )}
+
+          <div style={{
+            position: 'absolute',
+            bottom: '10mm',
+            left: '14mm',
+            right: '14mm',
+            borderTop: '1px solid #e2e8f0',
+            paddingTop: '6px',
+            fontSize: '7.5px',
+            color: '#94a3b8',
+            textAlign: 'center',
+          }}>
+            {s?.company_address || 'Douar Boumhchad Skoura – Ouarzazate'} – GMS : {s?.company_phone || ''}{s?.company_email ? ` – Email: ${s.company_email}` : ''}<br />
+            {footerLine}
+          </div>
         </div>
       </div>
-
-      {/* ─── TITLE ─────────────────────────────────────────── */}
-      <div style={{ fontWeight: 'bold', fontSize: '16px', margin: '6mm 0 4mm', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-        {docTitle} N° : {docNum}
-      </div>
-
-      {/* ─── CLIENT INFO ─────────────────────────────────────── */}
-      <div style={{ marginBottom: '6mm', fontSize: '12px' }}>
-        <div style={{ marginBottom: '3px' }}>
-          <span style={{ color: '#2563eb', fontWeight: 'bold' }}>DOIT :</span>
-          <span style={{ fontWeight: 'bold', marginLeft: '8px' }}>{client?.name || proforma?.recipient_name || '—'}</span>
-        </div>
-        <div>
-          <span style={{ color: '#2563eb', fontWeight: 'bold' }}>ICE :</span>
-          <span style={{ fontWeight: 'bold', marginLeft: '16px' }}>{client?.company_ice || proforma?.recipient_ice || '—'}</span>
-        </div>
-      </div>
-
-      {/* ─── TABLE ─────────────────────────────────────────── */}
-      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '6mm', fontSize: '11px' }}>
-        <thead>
-          <tr style={{ background: '#f8f8f8' }}>
-            {[
-              { label: 'DÉSIGNATION', w: '38%', align: 'left' as const },
-              { label: 'NB\nCHAMBRES', w: '13%', align: 'center' as const },
-              { label: 'NB\nCLIENTS', w: '13%', align: 'center' as const },
-              { label: 'P.U', w: '18%', align: 'center' as const },
-              { label: 'TOTAL\nTTC', w: '18%', align: 'center' as const },
-            ].map((col, i) => (
-              <th key={i} style={{
-                border: '1px solid #ccc',
-                padding: '6px 5px',
-                fontWeight: 'bold',
-                fontSize: '10px',
-                textAlign: col.align,
-                width: col.w,
-                whiteSpace: 'pre-line',
-                textTransform: 'uppercase',
-              }}>
-                {col.label}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((item, i) => {
-            const desc = item.description || (item as any).desc || '';
-            const qty = item.quantity || (item as any).qty || 0;
-            const nbClients = item.nb_clients ?? (item as any).nb_clients ?? '';
-            const price = item.unit_price || (item as any).price || 0;
-            const total = calcLineSubtotal(qty, price);
-            return (
-              <tr key={i}>
-                <td style={{ border: '1px solid #ccc', padding: '5px 7px' }}>{desc}</td>
-                <td style={{ border: '1px solid #ccc', padding: '5px', textAlign: 'center', fontWeight: qty ? 'bold' : 'normal', color: qty ? '#c2410c' : '#000' }}>{qty || ''}</td>
-                <td style={{ border: '1px solid #ccc', padding: '5px', textAlign: 'center', color: nbClients ? '#c2410c' : '#000', fontWeight: nbClients ? 'bold' : 'normal' }}>{nbClients}</td>
-                <td style={{ border: '1px solid #ccc', padding: '5px', textAlign: 'right' }}>{price ? formatMAD(price) : ''}</td>
-                <td style={{ border: '1px solid #ccc', padding: '5px', textAlign: 'right' }}>{total ? formatMAD(total) : ''}</td>
-              </tr>
-            );
-          })}
-          {/* Empty rows for padding alignment like the invoice template */}
-          {Array.from({ length: emptyRowCount }).map((_, i) => (
-            <tr key={`e-${i}`} style={{ height: '22px' }}>
-              <td style={{ border: '1px solid #ccc', padding: '5px' }}>&nbsp;</td>
-              <td style={{ border: '1px solid #ccc' }}></td>
-              <td style={{ border: '1px solid #ccc' }}></td>
-              <td style={{ border: '1px solid #ccc' }}></td>
-              <td style={{ border: '1px solid #ccc' }}></td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      {/* ─── TOTALS ─────────────────────────────────────────── */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '6mm' }}>
-        <table style={{ width: '240px', borderCollapse: 'collapse', fontSize: '11px' }}>
-          <tbody>
-            {[
-              { label: 'TOTAL TTC', value: formatMAD(totalTtc) + ' DH', bold: true },
-              { label: 'TOTAL HT', value: formatMAD(subtotalHt) + ' DH', bold: false },
-              { label: 'DONT TVA 10%', value: formatMAD(tvaAmount) + ' DH', bold: false },
-            ].map((row, i) => (
-              <tr key={i}>
-                <td style={{ border: '1px solid #ccc', padding: '5px 8px', fontWeight: row.bold ? 'bold' : 'normal' }}>{row.label}</td>
-                <td style={{ border: '1px solid #ccc', padding: '5px 8px', textAlign: 'right', fontWeight: row.bold ? 'bold' : 'normal' }}>{row.value}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* ─── AMOUNT IN WORDS (Optional for Proforma) ─────────── */}
-      {proforma.notes && (
-        <div style={{ marginBottom: '8mm', fontSize: '11px' }}>
-           <div style={{ fontStyle: 'italic', fontSize: '10px', color: '#555', marginTop: '6px' }}>Notes :</div>
-           <div style={{ whiteSpace: 'pre-line', marginTop: '4px' }}>{proforma.notes}</div>
-        </div>
-      )}
-
-      {/* ─── FOOTER ─────────────────────────────────────────── */}
-      <div style={{
-        position: 'absolute',
-        bottom: '10mm',
-        left: '14mm',
-        right: '14mm',
-        borderTop: '1px solid #e2e8f0',
-        paddingTop: '6px',
-        fontSize: '7.5px',
-        color: '#94a3b8',
-        textAlign: 'center',
-      }}>
-        {s?.company_address || 'Douar Boumhchad Skoura – Ouarzazate'} – GMS : {s?.company_phone || ''}{s?.company_email ? ` – Email: ${s.company_email}` : ''}<br />
-        {footerLine}
-      </div>
-    </div>
+    </>
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Main Page
-// ─────────────────────────────────────────────────────────────────────────────
 export default function ViewProformaPage() {
   const params = useParams();
   const router = useRouter();
@@ -233,7 +257,6 @@ export default function ViewProformaPage() {
     const totalTtc = Number(p.total_ttc || (p as any).grand_total_ttc || 0);
     const tvaAmount = Number(p.tva_amount || (p as any).tax_total || 0);
     setProforma({ ...p, total_ttc: totalTtc, tva_amount: tvaAmount });
-
     setClient(cData);
     setSettings(sData);
     setLoading(false);
@@ -251,7 +274,6 @@ export default function ViewProformaPage() {
   const convertToInvoice = async () => {
     setActionLoading(true);
     if (!proforma) return;
-
     const { data: numData } = await supabase.from('invoices').select('invoice_number');
     const { generateNextNumber } = await import('@/lib/calculations');
     const currentYear = new Date().getFullYear().toString();
@@ -281,27 +303,17 @@ export default function ViewProformaPage() {
 
   const handleDownloadPDF = async () => {
     setActionLoading(true);
-
     try {
       const response = await fetch(`/api/pdf/generate?type=proforma&id=${params.id}`);
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Erreur lors de la génération du PDF');
-      }
-
+      if (!response.ok) throw new Error('Erreur');
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = `Proforma-${proforma?.proforma_number || 'export'}.pdf`;
-      document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
     } catch (err: any) {
-      console.error(err);
-      alert(err.message || 'Erreur lors de la génération du PDF');
+      alert('Erreur PDF');
     } finally {
       setActionLoading(false);
     }
@@ -310,97 +322,89 @@ export default function ViewProformaPage() {
   if (loading || !proforma) return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
       <Loader2 className="w-8 h-8 text-orange-600 animate-spin" />
-      <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Chargement...</span>
     </div>
   );
 
   const statusInfo = STATUS_CONFIG[proforma.status] || STATUS_CONFIG.brouillon;
-
   const displayNum = proforma.proforma_number?.startsWith('FAC-PROFORMA-') 
     ? `${proforma.created_at ? format(parseISO(proforma.created_at as string), 'yyyy') : ''}/${proforma.proforma_number.replace('FAC-PROFORMA-', '').replace(/^0+/, '').padStart(2, '0')}`
     : proforma.proforma_number;
 
   return (
-    <div className="max-w-6xl mx-auto pb-40 animate-slide-up flex flex-col lg:flex-row gap-8 px-4 md:px-0">
-      {/* LEFT: DOCUMENT */}
-      <div className="flex-1 space-y-6 min-w-0">
-        <header className="no-print flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-          <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="icon" onClick={() => router.push('/proformas')} className="rounded-xl bg-white border border-slate-200 shadow-sm shrink-0">
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
-            <div>
-              <h2 className="text-xl md:text-2xl font-black tracking-tight text-slate-900 leading-none">{displayNum}</h2>
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-2">Facture Proforma</p>
+    <>
+      <div id="proforma-view-root" className="max-w-6xl mx-auto pb-40 animate-slide-up flex flex-col lg:flex-row gap-8 px-4 md:px-0">
+        <div className="flex-1 space-y-6 min-w-0">
+          <header className="no-print flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div className="flex items-center space-x-4">
+              <Button variant="ghost" size="icon" onClick={() => router.push('/proformas')} className="rounded-xl bg-white border border-slate-200 shadow-sm shrink-0">
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <div>
+                <h2 className="text-xl md:text-2xl font-black tracking-tight text-slate-900 leading-none">{displayNum}</h2>
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-2">Facture Proforma</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
+              <Badge className={`${statusInfo.color} border rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-widest shrink-0 shadow-sm`}>{statusInfo.label}</Badge>
+              {proforma.status === 'brouillon' && (
+                <div className="flex items-center gap-2 shrink-0">
+                  <Link href={`/proforma/${proforma.id}/edit`}>
+                    <Button variant="outline" className="rounded-xl h-10 px-4 text-[10px] font-black uppercase tracking-widest border-slate-200 bg-white shadow-sm">Modifier</Button>
+                  </Link>
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <Button onClick={() => updateStatus('envoyé')} disabled={actionLoading} className="rounded-xl h-10 px-4 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black uppercase tracking-widest shadow-xl shadow-blue-600/10 transition-all">
+                      <Send className="w-3.5 h-3.5 mr-2" /> Envoyer
+                    </Button>
+                  </motion.div>
+                </div>
+              )}
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <Button variant="outline" className="rounded-xl h-10 px-4 text-[10px] font-black uppercase tracking-widest border-slate-200 bg-white shadow-sm shrink-0" onClick={handleDownloadPDF} disabled={actionLoading}>
+                  <Download className="w-3.5 h-3.5 mr-2 text-slate-400" /> PDF
+                </Button>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <Button variant="outline" size="icon" className="rounded-xl h-10 w-10 shrink-0 bg-white border-slate-200 shadow-sm" onClick={() => window.print()}>
+                  <Printer className="w-4 h-4 text-slate-600" />
+                </Button>
+              </motion.div>
+            </div>
+          </header>
+
+          <div className="no-print shadow-[0_20px_50px_-20px_rgba(0,0,0,0.15)] rounded-[2.5rem] overflow-hidden border border-slate-200 bg-slate-200 p-4 md:p-12 flex justify-center min-h-[500px] md:min-h-[1000px]">
+            <div className="origin-top scale-[0.4] sm:scale-[0.5] md:scale-[0.8] lg:scale-100 transition-transform duration-500">
+              <ProformaPrintDoc proforma={proforma} client={client} settings={settings} />
             </div>
           </div>
-          <div className="flex items-center gap-3 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
-            <Badge className={`${statusInfo.color} border rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-widest shrink-0 shadow-sm`}>{statusInfo.label}</Badge>
-            {proforma.status === 'brouillon' && (
-              <div className="flex items-center gap-2 shrink-0">
-                <Link href={`/proforma/${proforma.id}/edit`}>
-                  <Button variant="outline" className="rounded-xl h-10 px-4 text-[10px] font-black uppercase tracking-widest border-slate-200 bg-white shadow-sm">Modifier</Button>
-                </Link>
-                <Button onClick={() => updateStatus('envoyé')} disabled={actionLoading} className="rounded-xl h-10 px-4 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black uppercase tracking-widest shadow-xl shadow-blue-600/10 transition-all">
-                  <Send className="w-3.5 h-3.5 mr-2" /> Envoyer
-                </Button>
-              </div>
-            )}
-            {proforma.status === 'envoyé' && (
-              <Button onClick={() => updateStatus('refusé')} disabled={actionLoading} variant="outline" className="rounded-xl h-10 px-4 text-rose-500 border-rose-200 hover:bg-rose-50 text-[10px] font-black uppercase tracking-widest shrink-0 transition-all">
-                <XCircle className="w-4 h-4 mr-2" /> Refusé
-              </Button>
-            )}
-            <Button variant="outline" className="rounded-xl h-10 px-4 text-[10px] font-black uppercase tracking-widest border-slate-200 bg-white shadow-sm shrink-0" onClick={handleDownloadPDF} disabled={actionLoading}>
-              <Download className="w-3.5 h-3.5 mr-2 text-slate-400" /> PDF
-            </Button>
-            <Button variant="outline" size="icon" className="rounded-xl h-10 w-10 shrink-0 bg-white border-slate-200 shadow-sm" onClick={() => window.print()}>
-              <Printer className="w-4 h-4 text-slate-600" />
-            </Button>
-          </div>
-        </header>
-
-        {/* A4 Document - Scaling for Mobile */}
-        <div className="no-print shadow-[0_20px_50px_-20px_rgba(0,0,0,0.15)] rounded-[2.5rem] overflow-hidden border border-slate-200 bg-slate-200 p-4 md:p-12 flex justify-center min-h-[500px] md:min-h-[1000px]">
-          <div className="origin-top scale-[0.4] sm:scale-[0.5] md:scale-[0.8] lg:scale-100 transition-transform duration-500">
-            <ProformaPrintDoc proforma={proforma} client={client} settings={settings} />
-          </div>
         </div>
 
-        {/* 1:1 MIRROR FOR PRINT/EXPORT (Hidden from UI) */}
-        <div className="print-only">
-          <div id="print-area">
-             <ProformaPrintDoc proforma={proforma} client={client} settings={settings} />
-          </div>
-        </div>
+        <aside className="lg:w-80 space-y-5 no-print lg:sticky lg:top-8 h-fit">
+          <Card className="bg-slate-900 text-white rounded-[2rem] border-none overflow-hidden p-7 shadow-2xl">
+             <p className="text-[10px] font-bold uppercase text-white/30 tracking-[0.2em] mb-1">Estimation</p>
+             <h3 className="text-3xl font-black tabular-nums">{formatMAD(Number(proforma.total_ttc))} <span className="text-sm opacity-30">DH</span></h3>
+             <Separator className="bg-white/10 my-6" />
+
+             {!proforma.linked_invoice_id ? (
+               <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                 <Button onClick={convertToInvoice} disabled={actionLoading} className="w-full bg-orange-600 hover:bg-orange-700 text-white h-14 rounded-2xl text-xs font-bold shadow-xl shadow-orange-600/20">
+                    {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4 mr-2" />}
+                    Convertir en facture
+                 </Button>
+               </motion.div>
+             ) : (
+               <Link href={`/facture-commerciale/${proforma.linked_invoice_id}/view`} className="block">
+                  <Button className="w-full bg-slate-800 hover:bg-slate-700 text-white h-14 rounded-2xl text-xs font-bold shadow-lg">
+                    Voir en facture <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+               </Link>
+             )}
+          </Card>
+        </aside>
       </div>
 
-      {/* RIGHT: ACTION SIDEBAR */}
-      <aside className="lg:w-80 space-y-5 no-print lg:sticky lg:top-8 h-fit">
-        <Card className="bg-slate-900 text-white rounded-[2rem] border-none overflow-hidden p-7">
-           <p className="text-[10px] font-bold uppercase text-white/30 tracking-[0.2em] mb-1">Montant Estimé</p>
-           <h3 className="text-3xl font-black tabular-nums">{formatMAD(Number(proforma.total_ttc))} <span className="text-sm opacity-30">DH</span></h3>
-           <Separator className="bg-white/10 my-6" />
-
-           {!proforma.linked_invoice_id && (
-             <Button
-               onClick={convertToInvoice}
-               disabled={actionLoading}
-               className="w-full bg-orange-600 hover:bg-orange-700 text-white h-14 rounded-2xl text-xs font-bold shadow-xl shadow-orange-600/20"
-             >
-                {actionLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileText className="w-4 h-4 mr-2" />}
-                Convertir en facture
-             </Button>
-           )}
-           {proforma.linked_invoice_id && (
-             <Link href={`/facture-commerciale/${proforma.linked_invoice_id}/view`} className="block">
-                <Button className="w-full bg-slate-800 hover:bg-slate-700 text-white h-14 rounded-2xl text-xs font-bold">
-                  Voir la facture liée <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-             </Link>
-           )}
-        </Card>
-      </aside>
-    </div>
+      <div className="print-only hidden print:block">
+         <ProformaPrintDoc proforma={proforma} client={client} settings={settings} />
+      </div>
+    </>
   );
 }

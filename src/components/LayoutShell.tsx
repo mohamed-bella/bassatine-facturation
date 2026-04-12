@@ -20,9 +20,9 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
       <AuthGuard>
         <SidebarProvider>
           <AppSidebar />
-          <SidebarInset className="bg-slate-100/80">
+          <SidebarInset className="bg-transparent overflow-x-hidden">
             {/* HEADER */}
-            <header className="h-14 flex items-center no-print z-40 sticky top-0 bg-white/80 backdrop-blur-xl border-b border-sidebar-border px-4 md:px-6">
+            <header className="h-16 flex items-center no-print z-40 sticky top-0 bg-white/60 backdrop-blur-md border-b border-white/20 px-4 md:px-6">
               <div className="flex items-center space-x-4">
                 <SidebarTrigger className="-ml-1" />
                 <Separator orientation="vertical" className="h-4 mr-2" />
