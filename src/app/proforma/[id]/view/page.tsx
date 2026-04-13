@@ -205,17 +205,6 @@ function ProformaPrintDoc({ proforma, client, settings }: { proforma: Proforma; 
             </div>
           )}
 
-          {s?.stamp_url && (
-            <div style={{
-              position: 'absolute',
-              bottom: '10mm',
-              right: '12mm',
-              textAlign: 'center',
-            }}>
-              <img src={s.stamp_url} alt="Cachet" style={{ height: '110px', opacity: 1, mixBlendMode: 'multiply', objectFit: 'contain' }} />
-            </div>
-          )}
-
           <div style={{
             position: 'absolute',
             bottom: '10mm',
