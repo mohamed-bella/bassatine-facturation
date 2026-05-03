@@ -11,7 +11,8 @@ import {
   Trash2, 
   History, 
   LayoutDashboard,
-  Zap
+  Zap,
+  CalendarDays
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
@@ -19,6 +20,7 @@ import { twMerge } from 'tailwind-merge';
 
 const menuItems = [
   { href: '/', label: 'Tableau de bord', icon: LayoutDashboard },
+  { href: '/channel-manager', label: 'Reservations Manager', icon: CalendarDays },
   { href: '/f-commercial', label: 'Documents', icon: FileText },
   { href: '/clients', label: 'Clients', icon: Users },
   { href: '/analytics', label: 'Statistiques', icon: BarChart3 },

@@ -415,9 +415,19 @@ export default function ProformaBuilder({ initialData, isEdit = false }: Props) 
           {/* CLIENT SECTION */}
           {renderClientSection()}
 
-          {/* DATES */}
+          {/* DATES + PROFORMA NUMBER */}
           <Card className="border border-slate-100 rounded-2xl shadow-sm">
-            <CardContent className="p-6">
+            <CardContent className="p-6 space-y-4">
+              <div className="space-y-2">
+                <Label className="text-xs font-bold text-slate-500">Numéro de proforma</Label>
+                <Input
+                  value={formData.proforma_number || ''}
+                  onChange={e => setFormData({ ...formData, proforma_number: e.target.value })}
+                  className="bg-slate-50 border-slate-200 h-11 rounded-xl text-sm font-bold tracking-wide"
+                  placeholder="Ex: 2025/01"
+                  disabled={isLocked}
+                />
+              </div>
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label className="text-xs font-bold text-slate-500">Date de création</Label>

@@ -21,7 +21,10 @@ import {
   Sparkles,
   FolderOpen,
   Tag,
-  Grid
+  Grid,
+  Calendar,
+  LogIn,
+  LogOut
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -38,21 +41,26 @@ export default function Dashboard() {
   const [proformas, setProformas] = useState<Proforma[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
+  const [todayData, setTodayData] = useState<{arrivals: any[], departures: any[]}>({ arrivals: [], departures: [] });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
-      const [{ data: iData }, { data: pData }, { data: payData }, { data: cData }] = await Promise.all([
+      const [{ data: iData }, { data: pData }, { data: payData }, { data: cData }, tRes] = await Promise.all([
         supabase.from('invoices').select('*').order('created_at', { ascending: false }),
         supabase.from('proformas').select('*').order('created_at', { ascending: false }),
         supabase.from('payments').select('*').eq('is_cancelled', false),
         supabase.from('clients').select('*'),
+        fetch('/api/dashboard/today'),
       ]);
+
+      const tData = await tRes.json();
 
       setInvoices(iData || []);
       setProformas(pData || []);
       setPayments(payData || []);
       setClients(cData || []);
+      setTodayData(tData);
       setLoading(false);
     };
     fetchData();
@@ -74,11 +82,18 @@ export default function Dashboard() {
     }, 0);
 
     const totalPaid = payments.reduce((acc, p) => acc + Number(p.amount), 0);
-
     const openProformas = proformas.filter(p => p.status === 'envoyé' || p.status === 'brouillon').length;
 
-    return { monthSales, totalDue, totalPaid, openProformas };
-  }, [invoices, proformas, payments]);
+    return { 
+      monthSales, 
+      totalDue, 
+      totalPaid, 
+      openProformas,
+      arrivals: todayData?.arrivals?.length || 0,
+      departures: todayData?.departures?.length || 0
+    };
+  }, [invoices, proformas, payments, todayData]);
+
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
@@ -111,36 +126,49 @@ export default function Dashboard() {
           <p className="text-xs md:text-sm font-bold text-slate-500/80 uppercase tracking-widest">Contrôle et pilotage de la gestion de luxe.</p>
         </div>
         
-        <div className="flex items-center gap-4 w-full lg:w-auto overflow-x-auto pb-2 scrollbar-hide">
-           <Link href="/backup">
-              <motion.button 
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="h-14 px-8 rounded-2xl text-[11px] font-black border border-white/40 bg-white/60 backdrop-blur-md text-slate-900 hover:bg-white hover:shadow-xl transition-all flex items-center shadow-lg cursor-pointer"
-              >
-                 <FileSpreadsheet className="w-4 h-4 mr-2 text-slate-400" /> SYNC & BACKUP
-              </motion.button>
-           </Link>
-           <Link href="/facture-commerciale/new">
-              <motion.button 
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="h-14 px-8 bg-slate-900 hover:bg-orange-600 text-white rounded-2xl text-[11px] font-black transition-all shadow-2xl flex items-center border border-slate-800 cursor-pointer"
-              >
-                 <Plus className="w-4 h-4 mr-2" /> NOUVELLE FACTURE
-              </motion.button>
-           </Link>
-        </div>
+         <div className="flex items-center gap-4 w-full lg:w-auto overflow-x-auto pb-2 scrollbar-hide">
+            <Link href="/channel-manager">
+               <motion.button 
+                 whileHover={{ scale: 1.05 }}
+                 whileTap={{ scale: 0.95 }}
+                 className="h-14 px-8 rounded-2xl text-[11px] font-black bg-orange-600 hover:bg-orange-700 text-white transition-all flex items-center shadow-lg cursor-pointer"
+               >
+                  <Calendar className="w-4 h-4 mr-2" /> MANAGE CALENDAR
+               </motion.button>
+            </Link>
+            <Link href="/backup">
+               <motion.button 
+                 whileHover={{ scale: 1.05 }}
+                 whileTap={{ scale: 0.95 }}
+                 className="h-14 px-8 rounded-2xl text-[11px] font-black border border-white/40 bg-white/60 backdrop-blur-md text-slate-900 hover:bg-white hover:shadow-xl transition-all flex items-center shadow-lg cursor-pointer"
+               >
+                  <FileSpreadsheet className="w-4 h-4 mr-2 text-slate-400" /> SYNC & BACKUP
+               </motion.button>
+            </Link>
+            <Link href="/facture-commerciale/new">
+               <motion.button 
+                 whileHover={{ scale: 1.05 }}
+                 whileTap={{ scale: 0.95 }}
+                 className="h-14 px-8 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl text-[11px] font-black transition-all shadow-2xl flex items-center border border-slate-800 cursor-pointer"
+               >
+                  <Plus className="w-4 h-4 mr-2" /> NOUVELLE FACTURE
+               </motion.button>
+            </Link>
+         </div>
+
       </motion.header>
 
       {/* KPI GRID - GLASS CARDS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 lg:gap-8">
          {[
            { label: 'C.A (Mois)', value: formatMAD(stats.monthSales), color: 'text-blue-600', bg: 'bg-blue-500/10', icon: TrendingUp, iconColor: 'text-blue-600' },
-           { label: 'Total Encaissé', value: formatMAD(stats.totalPaid), color: 'text-emerald-600', bg: 'bg-emerald-500/10', icon: CheckCircle2, iconColor: 'text-emerald-600' },
+           { label: 'Encaissé', value: formatMAD(stats.totalPaid), color: 'text-emerald-600', bg: 'bg-emerald-500/10', icon: CheckCircle2, iconColor: 'text-emerald-600' },
            { label: 'À percevoir', value: formatMAD(stats.totalDue), color: 'text-rose-600', bg: 'bg-rose-500/10', icon: AlertTriangle, iconColor: 'text-rose-600' },
-           { label: 'F. Proforma Actifs', value: stats.openProformas, color: 'text-orange-600', bg: 'bg-orange-500/10', icon: FileText, iconColor: 'text-orange-600', isNumber: true },
+           { label: 'Arrivées', value: stats.arrivals, color: 'text-emerald-500', bg: 'bg-emerald-500/10', icon: LogIn, iconColor: 'text-emerald-500', isNumber: true },
+           { label: 'Départs', value: stats.departures, color: 'text-orange-500', bg: 'bg-orange-500/10', icon: LogOut, iconColor: 'text-orange-500', isNumber: true },
+           { label: 'Proformas', value: stats.openProformas, color: 'text-slate-600', bg: 'bg-slate-100', icon: FileText, iconColor: 'text-slate-600', isNumber: true },
          ].map((stat, i) => {
+
            const Icon = stat.icon;
            return (
              <motion.div 
@@ -202,6 +230,7 @@ export default function Dashboard() {
 
             {/* Listes - Glass Tiles */}
             {[
+               { href: '/channel-manager', label: 'Calendrier', title: 'Reservations Manager', icon: Calendar, color: 'blue', span: 'col-span-1 md:col-span-2 lg:col-span-4' },
                { href: '/f-commercial', label: 'Archive', title: 'Factures Commerciales', icon: FolderOpen, color: 'blue' },
                { href: '/proformas', label: 'Archive', title: 'Factures Proformas', icon: FolderOpen, color: 'emerald' },
                { href: '/facture-commerciale/new', label: 'Générer', title: 'Nouveau Document', icon: Plus, color: 'orange' },

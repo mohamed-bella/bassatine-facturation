@@ -41,7 +41,7 @@ function InvoicePrintDoc({ invoice, client, settings }: { invoice: Invoice; clie
             margin: 0;
             background: #fff;
           }
-          #print-root {
+          #print-area {
             width: 210mm;
             height: 297mm;
             overflow: hidden;
@@ -63,15 +63,18 @@ function InvoicePrintDoc({ invoice, client, settings }: { invoice: Invoice; clie
           position: 'relative',
         }}
       >
-        <div style={{ padding: '12mm 18mm 12mm 12mm', flex: 1, position: 'relative' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8mm' }}>
+        {/* Main content — bottom padding reserves space for footer (~38mm) */}
+        <div style={{ padding: '12mm 14mm 42mm 14mm', flex: 1, position: 'relative' }}>
+
+          {/* Header: logo + company info | date */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '7mm' }}>
             <div>
               {s?.logo_url ? (
                 <img src={s.logo_url} alt="Logo" style={{ height: '60px', marginBottom: '6px', objectFit: 'contain' }} />
               ) : (
                 <div style={{ width: '70px', height: '60px', background: '#f1f5f9', borderRadius: '8px', marginBottom: '6px' }} />
               )}
-              <div style={{ fontWeight: 'bold', fontSize: '15px', marginTop: '8px' }}>{s?.company_name || 'BOUMHCHAD SARL AU'}</div>
+              <div style={{ fontWeight: 'bold', fontSize: '15px', marginTop: '6px' }}>{s?.company_name || 'BOUMHCHAD SARL AU'}</div>
               <div style={{ fontWeight: 'bold', fontSize: '12px', color: '#333' }}>{s?.company_sub_name || 'BASSATINE SKOURA'}</div>
               <div style={{ fontSize: '11px', color: '#444' }}>{s?.company_address || 'Douar Boumhchad Skoura – Ouarzazate'}</div>
               <div style={{ fontSize: '11px', color: '#444' }}>{s?.company_phone || '06 23 34 99 51 – 06 61 70 99 20'}</div>
@@ -82,14 +85,25 @@ function InvoicePrintDoc({ invoice, client, settings }: { invoice: Invoice; clie
             </div>
           </div>
 
-          <div style={{ fontWeight: 'bold', fontSize: '19px', margin: '8mm 0 6mm', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '2px solid #000', paddingBottom: '4px', display: 'inline-block' }}>
+          {/* Document title */}
+          <div style={{
+            fontWeight: 'bold',
+            fontSize: '19px',
+            margin: '6mm 0 5mm',
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px',
+            borderBottom: '2px solid #000',
+            paddingBottom: '4px',
+            display: 'inline-block',
+          }}>
             {docTitle} N° : {docNum}
           </div>
 
-          <div style={{ marginBottom: '8mm', fontSize: '14px' }}>
-            <div style={{ marginBottom: '5px' }}>
+          {/* Client info */}
+          <div style={{ marginBottom: '7mm', fontSize: '13px' }}>
+            <div style={{ marginBottom: '4px' }}>
               <span style={{ color: '#2563eb', fontWeight: 'bold' }}>DOIT :</span>
-              <span style={{ fontWeight: 'bold', marginLeft: '10px', fontSize: '15px' }}>{client?.name || invoice?.recipient_name || '—'}</span>
+              <span style={{ fontWeight: 'bold', marginLeft: '10px', fontSize: '14px' }}>{client?.name || invoice?.recipient_name || '—'}</span>
             </div>
             <div>
               <span style={{ color: '#2563eb', fontWeight: 'bold' }}>ICE :</span>
@@ -97,7 +111,8 @@ function InvoicePrintDoc({ invoice, client, settings }: { invoice: Invoice; clie
             </div>
           </div>
 
-          <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '8mm', fontSize: '12.5px' }}>
+          {/* Items table */}
+          <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '6mm', fontSize: '12px' }}>
             <thead>
               <tr style={{ background: '#f0f0f0' }}>
                 {[
@@ -109,7 +124,7 @@ function InvoicePrintDoc({ invoice, client, settings }: { invoice: Invoice; clie
                 ].map((col, i) => (
                   <th key={i} style={{
                     border: '1.5px solid #000',
-                    padding: '8px 5px',
+                    padding: '7px 5px',
                     fontWeight: 'bold',
                     fontSize: '11px',
                     textAlign: col.align,
@@ -130,7 +145,7 @@ function InvoicePrintDoc({ invoice, client, settings }: { invoice: Invoice; clie
                 const price = item.unit_price || (item as any).price || 0;
                 const total = calcLineSubtotal(qty, price);
                 return (
-                  <tr key={i}>
+                  <tr key={i} style={{ height: '24px' }}>
                     <td style={{ border: '1px solid #ccc', padding: '5px 7px' }}>{desc}</td>
                     <td style={{ border: '1px solid #ccc', padding: '5px', textAlign: 'center', fontWeight: qty ? 'bold' : 'normal', color: qty ? '#c2410c' : '#000' }}>{qty || ''}</td>
                     <td style={{ border: '1px solid #ccc', padding: '5px', textAlign: 'center', color: nbClients ? '#c2410c' : '#000', fontWeight: nbClients ? 'bold' : 'normal' }}>{nbClients}</td>
@@ -140,7 +155,7 @@ function InvoicePrintDoc({ invoice, client, settings }: { invoice: Invoice; clie
                 );
               })}
               {Array.from({ length: emptyRowCount }).map((_, i) => (
-                <tr key={`e-${i}`} style={{ height: '22px' }}>
+                <tr key={`e-${i}`} style={{ height: '24px' }}>
                   <td style={{ border: '1px solid #ccc', padding: '5px' }}>&nbsp;</td>
                   <td style={{ border: '1px solid #ccc' }}></td>
                   <td style={{ border: '1px solid #ccc' }}></td>
@@ -151,8 +166,9 @@ function InvoicePrintDoc({ invoice, client, settings }: { invoice: Invoice; clie
             </tbody>
           </table>
 
+          {/* Totals table */}
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '6mm' }}>
-            <table style={{ width: '240px', borderCollapse: 'collapse', fontSize: '11px' }}>
+            <table style={{ width: '250px', borderCollapse: 'collapse', fontSize: '12px' }}>
               <tbody>
                 {[
                   { label: 'TOTAL TTC', value: formatMAD(totalTtc) + ' DH', bold: true },
@@ -160,7 +176,7 @@ function InvoicePrintDoc({ invoice, client, settings }: { invoice: Invoice; clie
                   { label: 'DONT TVA 10%', value: formatMAD(tvaAmount) + ' DH', bold: false },
                 ].map((row, i) => (
                   <tr key={i}>
-                    <td style={{ border: '1px solid #ccc', padding: '5px 8px', fontWeight: row.bold ? 'bold' : 'normal', minWidth: '100px' }}>{row.label}</td>
+                    <td style={{ border: '1px solid #ccc', padding: '5px 8px', fontWeight: row.bold ? 'bold' : 'normal', minWidth: '110px' }}>{row.label}</td>
                     <td style={{ border: '1px solid #ccc', padding: '5px 12px', textAlign: 'right', fontWeight: row.bold ? 'bold' : 'normal', whiteSpace: 'nowrap' }}>{row.value}</td>
                   </tr>
                 ))}
@@ -168,31 +184,35 @@ function InvoicePrintDoc({ invoice, client, settings }: { invoice: Invoice; clie
             </table>
           </div>
 
-          <div style={{ marginBottom: '8mm', fontSize: '11px' }}>
-            <div style={{ marginBottom: '3px' }}>Arrête la présente facture à la somme de :</div>
+          {/* Amount in words */}
+          <div style={{ marginBottom: '6mm', fontSize: '11px' }}>
+            <div style={{ marginBottom: '3px', color: '#555' }}>Arrête la présente facture à la somme de :</div>
             <div style={{ fontWeight: 'bold', fontStyle: 'italic', fontSize: '12px', textTransform: 'uppercase' }}>
               {invoice.amount_words || ''}
             </div>
           </div>
 
+          {/* Stamp — sits above footer, on the right */}
           {s?.stamp_url && (
             <div style={{
               position: 'absolute',
-              bottom: '10mm',
-              right: '12mm',
+              bottom: '22mm',
+              right: '14mm',
               textAlign: 'center',
             }}>
-              <img src={s.stamp_url} alt="Cachet" style={{ height: '110px', opacity: 1, mixBlendMode: 'multiply', objectFit: 'contain' }} />
+              <img src={s.stamp_url} alt="Cachet" style={{ height: '100px', opacity: 1, mixBlendMode: 'multiply', objectFit: 'contain' }} />
             </div>
           )}
 
+          {/* Footer */}
           <div style={{
             position: 'absolute',
-            bottom: '10mm',
-            left: '14mm',
-            right: '14mm',
+            bottom: '8mm',
+            left: '0',
+            right: '0',
             borderTop: '1px solid #e2e8f0',
-            paddingTop: '6px',
+            paddingTop: '5px',
+            margin: '0 14mm',
             fontSize: '7.5px',
             color: '#94a3b8',
             textAlign: 'center',

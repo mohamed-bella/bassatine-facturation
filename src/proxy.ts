@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
   })
@@ -38,7 +38,8 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith('/backup') ||
     request.nextUrl.pathname.startsWith('/catalog') ||
     request.nextUrl.pathname.startsWith('/clients') ||
-    request.nextUrl.pathname.startsWith('/facture-commerciale')
+    request.nextUrl.pathname.startsWith('/facture-commerciale') ||
+    request.nextUrl.pathname.startsWith('/channel-manager')
   )
 
   if (!user && (isApiRoute || isSensitivePage)) {

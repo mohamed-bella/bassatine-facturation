@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: ['node-cron', 'ical.js'],
   images: {
     remotePatterns: [
       {
@@ -16,3 +17,4 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+

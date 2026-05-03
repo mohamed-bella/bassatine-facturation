@@ -390,9 +390,19 @@ export default function InvoiceBuilder({ initialData, isEdit = false }: Props) {
             </CardContent>
           </Card>
 
-          {/* DATES */}
+          {/* DATES + INVOICE NUMBER */}
           <Card className="border border-slate-100 rounded-2xl shadow-sm">
-            <CardContent className="p-6">
+            <CardContent className="p-6 space-y-4">
+              <div className="space-y-2">
+                <Label className="text-xs font-bold text-slate-500">Numéro de facture</Label>
+                <Input
+                  value={formData.invoice_number || ''}
+                  onChange={e => setFormData({ ...formData, invoice_number: e.target.value })}
+                  className="bg-slate-50 border-slate-200 h-11 rounded-xl text-sm font-bold tracking-wide"
+                  placeholder="Ex: 2025/001"
+                  disabled={isLocked}
+                />
+              </div>
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label className="text-xs font-bold text-slate-500">Date d'émission</Label>
