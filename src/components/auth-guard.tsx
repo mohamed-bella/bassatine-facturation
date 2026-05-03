@@ -1,16 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { login, getSession } from '@/app/actions/auth-actions';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Lock, Loader2, Sparkles, Mail, Key, Zap } from "lucide-react";
-import { User } from '@supabase/supabase-js';
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -19,22 +18,13 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Check initial session
-    const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user ?? null);
+    const checkSession = async () => {
+      const authenticated = await getSession();
+      setIsAuthenticated(authenticated);
       setLoading(false);
     };
 
-    getSession();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
+    checkSession();
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -42,13 +32,12 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     setAuthLoading(true);
     setErrorMsg(null);
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const result = await login(email, password);
 
-    if (error) {
-      setErrorMsg("Identifiants incorrects. Veuillez réessayer.");
+    if (result.success) {
+      setIsAuthenticated(true);
+    } else {
+      setErrorMsg(result.error || "Identifiants incorrects. Veuillez réessayer.");
     }
     
     setAuthLoading(false);
@@ -65,7 +54,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!user) {
+  if (!isAuthenticated) {
     return (
       <div className="min-h-screen w-full flex bg-white selection:bg-orange-600 selection:text-white overflow-hidden font-sans relative">
         {/* MOBILE BACKGROUND (Hidden on Desktop) */}

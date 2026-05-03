@@ -186,9 +186,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </div>
         
         <button 
-          onClick={() => {
+          onClick={async () => {
             if (confirm("Voulez-vous vraiment vous déconnecter ?")) {
-              import('@/lib/supabase').then(({ supabase }) => supabase.auth.signOut());
+              const { logout } = await import('@/app/actions/auth-actions');
+              await logout();
+              window.location.reload();
             }
           }}
           className="flex items-center justify-center space-x-2 w-full text-slate-400 hover:text-rose-600 py-2 rounded-lg transition-colors text-[9px] font-black uppercase tracking-widest mt-2 border border-transparent hover:border-rose-100 hover:bg-rose-50"

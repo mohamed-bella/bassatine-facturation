@@ -7,10 +7,10 @@ export async function GET(req: NextRequest) {
   const id = searchParams.get('id');
 
   // 1. AUTHENTICATION CHECK
-  const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { getSession } = await import('@/app/actions/auth-actions');
+  const isAuthenticated = await getSession();
 
-  if (!session) {
+  if (!isAuthenticated) {
     return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
   }
 
