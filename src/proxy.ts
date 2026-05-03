@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const isAuthenticated = request.cookies.get('auth_session')?.value === 'authenticated';
 
   // SENSITIVE ROUTE PROTECTION

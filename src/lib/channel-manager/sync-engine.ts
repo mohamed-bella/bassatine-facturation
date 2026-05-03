@@ -41,6 +41,8 @@ export async function syncRooms() {
 
       console.log(`[SYNC] Found ${vevents.length} events in ${source} feed for ${roomName}`);
 
+      const reservationsToUpsert = [];
+
       for (const vevent of vevents) {
         const event = new ical.Event(vevent);
         
@@ -54,24 +56,28 @@ export async function syncRooms() {
           ? 'cancelled' 
           : 'confirmed';
 
-        // Upsert into Supabase with room_id
+        reservationsToUpsert.push({
+          room_id,
+          source,
+          source_booking_id: sourceBookingId,
+          guest_name: summary,
+          check_in_date: checkIn.toISOString().split('T')[0],
+          check_out_date: checkOut.toISOString().split('T')[0],
+          status,
+          updated_at: new Date().toISOString(),
+        });
+      }
+
+      // Batch upsert into Supabase
+      if (reservationsToUpsert.length > 0) {
         const { error } = await supabase
           .from('reservations')
-          .upsert({
-            room_id,
-            source,
-            source_booking_id: sourceBookingId,
-            guest_name: summary,
-            check_in_date: checkIn.toISOString().split('T')[0],
-            check_out_date: checkOut.toISOString().split('T')[0],
-            status,
-            updated_at: new Date().toISOString(),
-          }, {
+          .upsert(reservationsToUpsert, {
             onConflict: 'source,source_booking_id'
           });
 
         if (error) {
-          console.error(`[SYNC] Error upserting reservation ${sourceBookingId}:`, error);
+          console.error(`[SYNC] Error batch upserting reservations for ${roomName}:`, error);
         }
       }
       
