@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase-server';
 import { format, parseISO } from 'date-fns';
 import { formatMAD, calcLineSubtotal } from '@/lib/calculations';
+import { STAMP_URL } from '@/lib/document-assets';
 import { Invoice, Client, Settings } from '@/types';
 
 function InvoicePrintDoc({ invoice, client, settings }: { invoice: Invoice; client: Client | null; settings: Settings | null }) {
@@ -193,14 +194,14 @@ function InvoicePrintDoc({ invoice, client, settings }: { invoice: Invoice; clie
           </div>
 
           {/* Stamp — sits above footer, on the right */}
-          {s?.stamp_url && (
+          {STAMP_URL && (
             <div style={{
               position: 'absolute',
               bottom: '22mm',
               right: '14mm',
               textAlign: 'center',
             }}>
-              <img src={s.stamp_url} alt="Cachet" style={{ height: '100px', opacity: 1, mixBlendMode: 'multiply', objectFit: 'contain' }} />
+              <img src={STAMP_URL} alt="Cachet" style={{ height: '100px', opacity: 1, mixBlendMode: 'multiply', objectFit: 'contain' }} />
             </div>
           )}
 

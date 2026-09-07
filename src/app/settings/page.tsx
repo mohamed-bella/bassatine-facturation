@@ -22,11 +22,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { STAMP_URL } from '@/lib/document-assets';
 
 const DEFAULT_SETTINGS: Settings = {
   id: 'global',
   logo_url: '',
-  stamp_url: '',
+  stamp_url: STAMP_URL,
   company_name: 'BOUMHCHAD SARL AU',
   company_sub_name: 'BASSATINE SKOURA',
   company_email: 'contact@bassatine-skoura.com',
@@ -48,7 +49,7 @@ export default function SettingsPage() {
   useEffect(() => {
     const fetchSettings = async () => {
       const { data } = await supabase.from('settings').select('*').eq('id', 'global').single();
-      if (data) setSettings({ ...DEFAULT_SETTINGS, ...data });
+      if (data) setSettings({ ...DEFAULT_SETTINGS, ...data, stamp_url: STAMP_URL });
       setLoading(false);
     };
     fetchSettings();
@@ -56,7 +57,9 @@ export default function SettingsPage() {
 
   const handleSave = async () => {
     setSaving(true);
-    const { error } = await supabase.from('settings').upsert(settings, { onConflict: 'id' });
+    const settingsToSave = { ...settings, stamp_url: STAMP_URL };
+    setSettings(settingsToSave);
+    const { error } = await supabase.from('settings').upsert(settingsToSave, { onConflict: 'id' });
     setSaving(false);
     if (!error) {
       setSaved(true);
@@ -205,11 +208,11 @@ export default function SettingsPage() {
           <div className="space-y-3">
             <Label className="text-xs font-bold text-slate-500 flex items-center"><Stamp className="w-3.5 h-3.5 mr-1.5" /> URL du Cachet / Tampon</Label>
             <p className="text-[11px] text-muted-foreground italic">Le cachet sera automatiquement affiché sur les <strong>Factures Commerciales</strong> (non sur les proformas).</p>
-            <Input value={settings.stamp_url || ''} onChange={e => set('stamp_url', e.target.value)}
+            <Input value={STAMP_URL} readOnly
               className="h-11 bg-slate-50 border-slate-200 rounded-xl text-sm font-mono text-xs" placeholder="https://..." />
-            {settings.stamp_url && (
+            {STAMP_URL && (
               <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl flex items-center space-x-4">
-                <img src={settings.stamp_url} alt="Cachet preview" className="max-h-24 max-w-[200px] object-contain rounded opacity-80" onError={(e) => (e.currentTarget.style.display = 'none')} />
+                <img src={STAMP_URL} alt="Cachet preview" className="max-h-24 max-w-[200px] object-contain rounded opacity-80" onError={(e) => (e.currentTarget.style.display = 'none')} />
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Aperçu du cachet</p>
               </div>
             )}

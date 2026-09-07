@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Invoice, Client, Payment, Proforma, Settings } from '@/types';
 import { formatMAD, calcLineSubtotal, calcAmountPaid, calcAmountDue } from '@/lib/calculations';
+import { STAMP_URL } from '@/lib/document-assets';
 import { format, parseISO, isBefore, startOfDay } from 'date-fns';
 import {
   Loader2,
@@ -218,14 +219,14 @@ function InvoicePrintDoc({ invoice, client, settings }: { invoice: Invoice; clie
             </div>
           </div>
 
-          {s?.stamp_url && (
+          {STAMP_URL && (
             <div style={{
               position: 'absolute',
               bottom: '10mm',
               right: '12mm',
               textAlign: 'center',
             }}>
-              <img src={s.stamp_url} alt="Cachet" style={{ height: '110px', opacity: 1, mixBlendMode: 'multiply', objectFit: 'contain' }} />
+              <img src={STAMP_URL} alt="Cachet" style={{ height: '110px', opacity: 1, mixBlendMode: 'multiply', objectFit: 'contain' }} />
             </div>
           )}
 

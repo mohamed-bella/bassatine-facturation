@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { motion } from "framer-motion";
+import { STAMP_URL } from '@/lib/document-assets';
 
 import { chatInvoiceAi } from '@/app/actions/ai-actions';
 import { formatMAD } from '@/lib/calculations';
@@ -155,14 +156,14 @@ function AiPreviewDoc({ data, isProforma, settings }: { data: any, isProforma: b
             </table>
           </div>
           
-          {s?.stamp_url && (
+          {STAMP_URL && (
             <div style={{
               position: 'absolute',
               bottom: '10mm',
               right: '12mm',
               textAlign: 'center',
             }}>
-              <img src={s.stamp_url} alt="Cachet" style={{ height: '110px', opacity: 1, mixBlendMode: 'multiply', objectFit: 'contain' }} />
+              <img src={STAMP_URL} alt="Cachet" style={{ height: '110px', opacity: 1, mixBlendMode: 'multiply', objectFit: 'contain' }} />
             </div>
           )}
 
