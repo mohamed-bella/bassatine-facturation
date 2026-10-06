@@ -207,7 +207,11 @@ function InvoicePrintDoc({ invoice, client, settings }: { invoice: Invoice; clie
                   { label: 'TOTAL HT', value: formatMAD(subtotalHt) + ' DH', bold: false },
                   { label: 'DONT TVA 10%', value: formatMAD(tvaAmount) + ' DH', bold: false },
                 ].map((row, i) => (
-                  <tr key={i}>
+                  <tr key={i} style={{
+                    backgroundColor: row.label === 'TOTAL TTC' ? '#fff2a8' : undefined,
+                    printColorAdjust: 'exact',
+                    WebkitPrintColorAdjust: 'exact',
+                  }}>
                     <td style={{ border: '1px solid #ccc', padding: '5px 8px', fontWeight: row.bold ? 'bold' : 'normal', minWidth: '100px' }}>{row.label}</td>
                     <td style={{ border: '1px solid #ccc', padding: '5px 12px', textAlign: 'right', fontWeight: row.bold ? 'bold' : 'normal', whiteSpace: 'nowrap' }}>{row.value}</td>
                   </tr>
