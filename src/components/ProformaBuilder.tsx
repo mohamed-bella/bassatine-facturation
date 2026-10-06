@@ -52,7 +52,7 @@ interface Props {
   isEdit?: boolean;
 }
 
-const EMPTY_LINE: LineItem = { description: '', quantity: 1, nb_clients: 1, unit_price: 0, subtotal: 0 };
+const EMPTY_LINE: LineItem = { description: '', quantity: 1, nb_nights: 1, nb_clients: 1, unit_price: 0, subtotal: 0 };
 
 export default function ProformaBuilder({ initialData, isEdit = false }: Props) {
   const router = useRouter();
@@ -71,6 +71,7 @@ export default function ProformaBuilder({ initialData, isEdit = false }: Props) 
           ...item,
           description: item.description || (item as any).desc || '',
           quantity: item.quantity || (item as any).qty || 1,
+          nb_nights: item.nb_nights ?? 0,
           unit_price: item.unit_price || (item as any).price || 0
         }))
       };
@@ -120,6 +121,7 @@ export default function ProformaBuilder({ initialData, isEdit = false }: Props) 
             items_json: aiData.items.map((item: any) => ({
               description: item.description,
               quantity: item.quantity || 1,
+              nb_nights: item.nb_nights || 1,
               nb_clients: item.nb_clients || 1,
               unit_price: item.unit_price || 0,
               subtotal: (item.quantity || 1) * (item.unit_price || 0)
@@ -294,6 +296,8 @@ export default function ProformaBuilder({ initialData, isEdit = false }: Props) 
     const newLine: LineItem = {
       description: catItem.name + (catItem.description ? ` — ${catItem.description}` : ''),
       quantity: 1,
+      nb_nights: 1,
+      nb_clients: 1,
       unit_price: catItem.default_price,
       subtotal: catItem.default_price,
     };
@@ -528,30 +532,38 @@ export default function ProformaBuilder({ initialData, isEdit = false }: Props) 
                   className="bg-slate-50/50 rounded-xl p-4 border border-slate-100 group hover:border-slate-200 transition-all"
                 >
                   <div className="grid grid-cols-12 gap-3 items-end">
-                    <div className="col-span-12 md:col-span-3 space-y-1">
+                    <div className="col-span-12 space-y-1">
                       <Label className="text-[10px] font-bold text-slate-400">Désignation</Label>
                       <Input value={item.description ?? ''} onChange={e => updateItem(idx, 'description', e.target.value)}
                         className="bg-white border-slate-200 h-10 rounded-lg text-sm" placeholder="Nature de la prestation" disabled={isLocked} />
                     </div>
-                    <div className="col-span-2 space-y-1">
-                      <Label className="text-[10px] font-bold text-slate-400">Qté</Label>
+                    <div className="col-span-4 md:col-span-2 space-y-1">
+                      <Label className="text-[10px] font-bold text-slate-400">Chambres</Label>
                       <Input type="number" value={item.quantity ?? 0} onChange={e => updateItem(idx, 'quantity', parseInt(e.target.value) || 0)}
                         className="bg-white border-slate-200 h-10 rounded-lg text-sm text-center" disabled={isLocked} />
                     </div>
-                    <div className="col-span-2 space-y-1">
+                    <div className="col-span-4 md:col-span-2 space-y-1">
+                      <Label className="text-[10px] font-bold text-slate-400">Nuits</Label>
+                      <Input type="number" min="0" value={item.nb_nights ?? 0} onChange={e => updateItem(idx, 'nb_nights', parseInt(e.target.value) || 0)}
+                        className="bg-white border-slate-200 h-10 rounded-lg text-sm text-center" disabled={isLocked} />
+                    </div>
+                    <div className="col-span-4 md:col-span-2 space-y-1">
                       <Label className="text-[10px] font-bold text-slate-400">Pax</Label>
                       <Input type="number" value={item.nb_clients ?? 0} onChange={e => updateItem(idx, 'nb_clients', parseInt(e.target.value) || 0)}
                         className="bg-white border-slate-200 h-10 rounded-lg text-sm text-center" disabled={isLocked} />
                     </div>
-                    <div className="col-span-3 space-y-1">
+                    <div className="col-span-6 md:col-span-3 space-y-1">
                       <Label className="text-[10px] font-bold text-slate-400">Prix unit. ({formData.tva_mode === 'ht' ? 'HT' : 'TTC'})</Label>
                       <Input type="number" step="0.01" value={item.unit_price ?? 0} onChange={e => updateItem(idx, 'unit_price', parseFloat(e.target.value) || 0)}
                         className="bg-white border-slate-200 h-10 rounded-lg text-sm text-right" disabled={isLocked} />
                     </div>
-                    <div className="col-span-12 md:col-span-2 flex items-end justify-between">
-                      <span className="text-sm font-bold text-slate-900 tabular-nums">{formatMAD(calcLineSubtotal(item.quantity, item.unit_price))}</span>
+                    <div className="col-span-6 md:col-span-3 flex items-end justify-between rounded-lg border border-slate-100 bg-slate-100/50 p-2">
+                      <div className="flex min-w-0 flex-col">
+                        <span className="text-[8px] font-black uppercase tracking-tighter text-slate-400">Sous-total</span>
+                        <span className="text-sm font-bold text-slate-900 tabular-nums">{formatMAD(calcLineSubtotal(item.quantity, item.unit_price))}</span>
+                      </div>
                       <Button variant="ghost" size="icon" onClick={() => removeItem(idx)} disabled={isLocked}
-                        className="w-8 h-8 rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 opacity-0 group-hover:opacity-100 transition-all">
+                        className="h-8 w-8 shrink-0 rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 opacity-0 group-hover:opacity-100 transition-all">
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
@@ -623,17 +635,21 @@ export default function ProformaBuilder({ initialData, isEdit = false }: Props) 
                 {/* Items */}
                 <div className="space-y-2">
                   <div className="grid grid-cols-12 font-bold text-muted-foreground border-b border-slate-100 pb-2">
-                    <span className="col-span-6">Description</span>
-                    <span className="col-span-2 text-center">Qté</span>
-                    <span className="col-span-2 text-right">P.U.</span>
-                    <span className="col-span-2 text-right">Total</span>
+                    <span className="col-span-3">Description</span>
+                    <span className="col-span-1 text-center">Ch.</span>
+                    <span className="col-span-1 text-center">Nuits</span>
+                    <span className="col-span-1 text-center">Pax</span>
+                    <span className="col-span-3 text-right">P.U.</span>
+                    <span className="col-span-3 text-right">Total</span>
                   </div>
                   {formData.items_json?.map((item, i) => (
                     <div key={i} className="grid grid-cols-12 py-1.5">
-                      <span className="col-span-6 truncate font-medium">{item.description || '...'}</span>
-                      <span className="col-span-2 text-center tabular-nums">{item.quantity}</span>
-                      <span className="col-span-2 text-right tabular-nums">{formatMAD(item.unit_price)}</span>
-                      <span className="col-span-2 text-right tabular-nums font-bold">{formatMAD(calcLineSubtotal(item.quantity, item.unit_price))}</span>
+                      <span className="col-span-3 truncate font-medium">{item.description || '...'}</span>
+                      <span className="col-span-1 text-center tabular-nums">{item.quantity}</span>
+                      <span className="col-span-1 text-center tabular-nums">{item.nb_nights ?? 0}</span>
+                      <span className="col-span-1 text-center tabular-nums">{item.nb_clients ?? 0}</span>
+                      <span className="col-span-3 text-right tabular-nums">{formatMAD(item.unit_price)}</span>
+                      <span className="col-span-3 text-right tabular-nums font-bold">{formatMAD(calcLineSubtotal(item.quantity, item.unit_price))}</span>
                     </div>
                   ))}
                 </div>

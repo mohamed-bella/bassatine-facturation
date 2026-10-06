@@ -491,17 +491,17 @@ export default function InvoiceBuilder({ initialData, isEdit = false }: Props) {
                       <Input value={item.description ?? ''} onChange={e => updateItem(idx, 'description', e.target.value)}
                         className="bg-white border-slate-200 h-10 rounded-lg text-sm" placeholder="Nature de la prestation" disabled={isLocked} />
                     </div>
-                    <div className="col-span-4 md:col-span-1 space-y-1">
+                    <div className="col-span-4 md:col-span-2 space-y-1">
                       <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Chambres</Label>
                       <Input type="number" value={item.quantity ?? 0} onChange={e => updateItem(idx, 'quantity', parseInt(e.target.value) || 0)}
                         className="bg-white border-slate-200 h-10 rounded-lg text-sm text-center px-1" disabled={isLocked} />
                     </div>
-                    <div className="col-span-4 md:col-span-1 space-y-1">
+                    <div className="col-span-4 md:col-span-2 space-y-1">
                       <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nuits</Label>
                       <Input type="number" min="0" value={item.nb_nights ?? 0} onChange={e => updateItem(idx, 'nb_nights', parseInt(e.target.value) || 0)}
                         className="bg-white border-slate-200 h-10 rounded-lg text-sm text-center px-1" disabled={isLocked} />
                     </div>
-                    <div className="col-span-4 md:col-span-1 space-y-1">
+                    <div className="col-span-4 md:col-span-2 space-y-1">
                       <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pax</Label>
                       <Input type="number" value={item.nb_clients ?? 0} onChange={e => updateItem(idx, 'nb_clients', parseInt(e.target.value) || 0)}
                         className="bg-white border-slate-200 h-10 rounded-lg text-sm text-center px-1" disabled={isLocked} />

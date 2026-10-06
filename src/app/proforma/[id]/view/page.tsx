@@ -131,9 +131,10 @@ function ProformaPrintDoc({ proforma, client, settings }: { proforma: Proforma; 
             <thead>
               <tr style={{ background: '#f0f0f0' }}>
                 {[
-                  { label: 'DÉSIGNATION', w: '40%', align: 'left' as const },
-                  { label: 'NB\nCHAMBRES', w: '12%', align: 'center' as const },
-                  { label: 'NB\nCLIENTS', w: '12%', align: 'center' as const },
+                  { label: 'DÉSIGNATION', w: '34%', align: 'left' as const },
+                  { label: 'NB\nCHAMBRES', w: '10%', align: 'center' as const },
+                  { label: 'NB\nNUITS', w: '10%', align: 'center' as const },
+                  { label: 'NB\nCLIENTS', w: '10%', align: 'center' as const },
                   { label: 'P.U (DH)', w: '18%', align: 'center' as const },
                   { label: 'TOTAL\nTTC', w: '18%', align: 'center' as const },
                 ].map((col, i) => (
@@ -156,6 +157,7 @@ function ProformaPrintDoc({ proforma, client, settings }: { proforma: Proforma; 
               {items.map((item: any, i: number) => {
                 const desc = item.description || (item as any).desc || '';
                 const qty = item.quantity || (item as any).qty || 0;
+                const nbNights = item.nb_nights ?? '';
                 const nbClients = item.nb_clients ?? (item as any).nb_clients ?? '';
                 const price = item.unit_price || (item as any).price || 0;
                 const total = calcLineSubtotal(qty, price);
@@ -163,6 +165,7 @@ function ProformaPrintDoc({ proforma, client, settings }: { proforma: Proforma; 
                   <tr key={i}>
                     <td style={{ border: '1px solid #ccc', padding: '5px 7px' }}>{desc}</td>
                     <td style={{ border: '1px solid #ccc', padding: '5px', textAlign: 'center', fontWeight: qty ? 'bold' : 'normal', color: qty ? '#c2410c' : '#000' }}>{qty || ''}</td>
+                    <td style={{ border: '1px solid #ccc', padding: '5px', textAlign: 'center', color: nbNights ? '#c2410c' : '#000', fontWeight: nbNights ? 'bold' : 'normal' }}>{nbNights}</td>
                     <td style={{ border: '1px solid #ccc', padding: '5px', textAlign: 'center', color: nbClients ? '#c2410c' : '#000', fontWeight: nbClients ? 'bold' : 'normal' }}>{nbClients}</td>
                     <td style={{ border: '1px solid #ccc', padding: '5px', textAlign: 'right' }}>{price ? formatMAD(price) : ''}</td>
                     <td style={{ border: '1px solid #ccc', padding: '5px', textAlign: 'right' }}>{total ? formatMAD(total) : ''}</td>
@@ -172,6 +175,7 @@ function ProformaPrintDoc({ proforma, client, settings }: { proforma: Proforma; 
               {Array.from({ length: emptyRowCount }).map((_, i) => (
                 <tr key={`e-${i}`} style={{ height: '22px' }}>
                   <td style={{ border: '1px solid #ccc', padding: '5px' }}>&nbsp;</td>
+                  <td style={{ border: '1px solid #ccc' }}></td>
                   <td style={{ border: '1px solid #ccc' }}></td>
                   <td style={{ border: '1px solid #ccc' }}></td>
                   <td style={{ border: '1px solid #ccc' }}></td>
@@ -189,7 +193,11 @@ function ProformaPrintDoc({ proforma, client, settings }: { proforma: Proforma; 
                   { label: 'TOTAL HT', value: formatMAD(subtotalHt) + ' DH', bold: false },
                   { label: 'DONT TVA 10%', value: formatMAD(tvaAmount) + ' DH', bold: false },
                 ].map((row, i) => (
-                  <tr key={i}>
+                  <tr key={i} style={{
+                    backgroundColor: row.label === 'TOTAL TTC' ? '#fff2a8' : undefined,
+                    printColorAdjust: 'exact',
+                    WebkitPrintColorAdjust: 'exact',
+                  }}>
                     <td style={{ border: '1px solid #ccc', padding: '5px 8px', fontWeight: row.bold ? 'bold' : 'normal', minWidth: '100px' }}>{row.label}</td>
                     <td style={{ border: '1px solid #ccc', padding: '5px 12px', textAlign: 'right', fontWeight: row.bold ? 'bold' : 'normal', whiteSpace: 'nowrap' }}>{row.value}</td>
                   </tr>
