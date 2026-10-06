@@ -9,6 +9,7 @@ export type CatalogCategory = 'chambre' | 'service' | 'taxe' | 'autre';
 export interface LineItem {
   description: string;
   quantity: number;       // nb_chambres (number of rooms)
+  nb_nights?: number;     // number of nights
   nb_clients?: number;    // number of clients/persons
   unit_price: number;
   subtotal: number;       // quantity × unit_price, rounded to 2 decimals

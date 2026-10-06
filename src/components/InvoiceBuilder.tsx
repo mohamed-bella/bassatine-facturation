@@ -39,7 +39,7 @@ interface Props {
   isEdit?: boolean;
 }
 
-const EMPTY_LINE: LineItem = { description: '', quantity: 1, nb_clients: 1, unit_price: 0, subtotal: 0 };
+const EMPTY_LINE: LineItem = { description: '', quantity: 1, nb_nights: 1, nb_clients: 1, unit_price: 0, subtotal: 0 };
 
 export default function InvoiceBuilder({ initialData, isEdit = false }: Props) {
   const router = useRouter();
@@ -112,6 +112,7 @@ export default function InvoiceBuilder({ initialData, isEdit = false }: Props) {
               return {
                 description: String(item.description || '').slice(0, 500).replace(/[<>]/g, ''), // Strip tags
                 quantity: qty,
+                nb_nights: parseInt(String(item.nb_nights)) || 1,
                 nb_clients: parseInt(String(item.nb_clients)) || 1,
                 unit_price: price,
                 subtotal: qty * price
@@ -196,6 +197,8 @@ export default function InvoiceBuilder({ initialData, isEdit = false }: Props) {
     const newLine: LineItem = {
       description: catItem.name + (catItem.description ? ` — ${catItem.description}` : ''),
       quantity: 1,
+      nb_nights: 1,
+      nb_clients: 1,
       unit_price: catItem.default_price,
       subtotal: catItem.default_price,
     };
@@ -489,8 +492,13 @@ export default function InvoiceBuilder({ initialData, isEdit = false }: Props) {
                         className="bg-white border-slate-200 h-10 rounded-lg text-sm" placeholder="Nature de la prestation" disabled={isLocked} />
                     </div>
                     <div className="col-span-4 md:col-span-1 space-y-1">
-                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Qté</Label>
+                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Chambres</Label>
                       <Input type="number" value={item.quantity ?? 0} onChange={e => updateItem(idx, 'quantity', parseInt(e.target.value) || 0)}
+                        className="bg-white border-slate-200 h-10 rounded-lg text-sm text-center px-1" disabled={isLocked} />
+                    </div>
+                    <div className="col-span-4 md:col-span-1 space-y-1">
+                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nuits</Label>
+                      <Input type="number" min="0" value={item.nb_nights ?? 0} onChange={e => updateItem(idx, 'nb_nights', parseInt(e.target.value) || 0)}
                         className="bg-white border-slate-200 h-10 rounded-lg text-sm text-center px-1" disabled={isLocked} />
                     </div>
                     <div className="col-span-4 md:col-span-1 space-y-1">
@@ -498,12 +506,12 @@ export default function InvoiceBuilder({ initialData, isEdit = false }: Props) {
                       <Input type="number" value={item.nb_clients ?? 0} onChange={e => updateItem(idx, 'nb_clients', parseInt(e.target.value) || 0)}
                         className="bg-white border-slate-200 h-10 rounded-lg text-sm text-center px-1" disabled={isLocked} />
                     </div>
-                    <div className="col-span-4 md:col-span-3 space-y-1">
+                    <div className="col-span-6 md:col-span-3 space-y-1">
                       <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Prix unit. ({formData.tva_mode === 'ht' ? 'HT' : 'TTC'})</Label>
                       <Input type="number" step="0.01" value={item.unit_price ?? 0} onChange={e => updateItem(idx, 'unit_price', parseFloat(e.target.value) || 0)}
                         className="bg-white border-slate-200 h-10 rounded-lg text-sm text-right" disabled={isLocked} />
                     </div>
-                    <div className="col-span-12 md:col-span-2 flex items-center justify-between bg-slate-100/50 p-2 rounded-xl border border-slate-100">
+                    <div className="col-span-6 md:col-span-3 flex items-center justify-between bg-slate-100/50 p-2 rounded-xl border border-slate-100">
                       <div className="flex flex-col">
                         <span className="text-[8px] font-black uppercase text-slate-400 tracking-tighter">Sous-total</span>
                         <span className="text-sm font-black text-slate-900 tabular-nums leading-none">{formatMAD(calcLineSubtotal(item.quantity, item.unit_price))}</span>
@@ -566,17 +574,21 @@ export default function InvoiceBuilder({ initialData, isEdit = false }: Props) {
                 <Separator />
                 <div className="space-y-2">
                   <div className="grid grid-cols-12 font-bold text-muted-foreground border-b border-slate-100 pb-2">
-                    <span className="col-span-6">Description</span>
-                    <span className="col-span-2 text-center">Qté</span>
-                    <span className="col-span-2 text-right">P.U.</span>
-                    <span className="col-span-2 text-right">Total</span>
+                    <span className="col-span-3">Description</span>
+                    <span className="col-span-1 text-center">Ch.</span>
+                    <span className="col-span-1 text-center">Nuits</span>
+                    <span className="col-span-1 text-center">Pax</span>
+                    <span className="col-span-3 text-right">P.U.</span>
+                    <span className="col-span-3 text-right">Total</span>
                   </div>
                   {formData.items_json?.map((item, i) => (
                     <div key={i} className="grid grid-cols-12 py-1.5">
-                      <span className="col-span-6 truncate font-medium">{item.description || '...'}</span>
-                      <span className="col-span-2 text-center tabular-nums">{item.quantity}</span>
-                      <span className="col-span-2 text-right tabular-nums">{formatMAD(item.unit_price)}</span>
-                      <span className="col-span-2 text-right tabular-nums font-bold">{formatMAD(calcLineSubtotal(item.quantity, item.unit_price))}</span>
+                      <span className="col-span-3 truncate font-medium">{item.description || '...'}</span>
+                      <span className="col-span-1 text-center tabular-nums">{item.quantity}</span>
+                      <span className="col-span-1 text-center tabular-nums">{item.nb_nights ?? 0}</span>
+                      <span className="col-span-1 text-center tabular-nums">{item.nb_clients ?? 0}</span>
+                      <span className="col-span-3 text-right tabular-nums">{formatMAD(item.unit_price)}</span>
+                      <span className="col-span-3 text-right tabular-nums font-bold">{formatMAD(calcLineSubtotal(item.quantity, item.unit_price))}</span>
                     </div>
                   ))}
                 </div>

@@ -145,9 +145,10 @@ function InvoicePrintDoc({ invoice, client, settings }: { invoice: Invoice; clie
             <thead>
               <tr style={{ background: '#f0f0f0' }}>
                 {[
-                  { label: 'DÉSIGNATION', w: '40%', align: 'left' as const },
-                  { label: 'NB\nCHAMBRES', w: '12%', align: 'center' as const },
-                  { label: 'NB\nCLIENTS', w: '12%', align: 'center' as const },
+                  { label: 'DÉSIGNATION', w: '34%', align: 'left' as const },
+                  { label: 'NB\nCHAMBRES', w: '10%', align: 'center' as const },
+                  { label: 'NB\nNUITS', w: '10%', align: 'center' as const },
+                  { label: 'NB\nCLIENTS', w: '10%', align: 'center' as const },
                   { label: 'P.U (DH)', w: '18%', align: 'center' as const },
                   { label: 'TOTAL\nTTC', w: '18%', align: 'center' as const },
                 ].map((col, i) => (
@@ -170,6 +171,7 @@ function InvoicePrintDoc({ invoice, client, settings }: { invoice: Invoice; clie
               {items.map((item: any, i: number) => {
                 const desc = item.description || (item as any).desc || '';
                 const qty = item.quantity || (item as any).qty || 0;
+                const nbNights = item.nb_nights ?? '';
                 const nbClients = item.nb_clients ?? (item as any).nb_clients ?? '';
                 const price = item.unit_price || (item as any).price || 0;
                 const total = calcLineSubtotal(qty, price);
@@ -177,6 +179,7 @@ function InvoicePrintDoc({ invoice, client, settings }: { invoice: Invoice; clie
                   <tr key={i}>
                     <td style={{ border: '1px solid #ccc', padding: '5px 7px' }}>{desc}</td>
                     <td style={{ border: '1px solid #ccc', padding: '5px', textAlign: 'center', fontWeight: qty ? 'bold' : 'normal', color: qty ? '#c2410c' : '#000' }}>{qty || ''}</td>
+                    <td style={{ border: '1px solid #ccc', padding: '5px', textAlign: 'center', color: nbNights ? '#c2410c' : '#000', fontWeight: nbNights ? 'bold' : 'normal' }}>{nbNights}</td>
                     <td style={{ border: '1px solid #ccc', padding: '5px', textAlign: 'center', color: nbClients ? '#c2410c' : '#000', fontWeight: nbClients ? 'bold' : 'normal' }}>{nbClients}</td>
                     <td style={{ border: '1px solid #ccc', padding: '5px', textAlign: 'right' }}>{price ? formatMAD(price) : ''}</td>
                     <td style={{ border: '1px solid #ccc', padding: '5px', textAlign: 'right' }}>{total ? formatMAD(total) : ''}</td>
@@ -186,6 +189,7 @@ function InvoicePrintDoc({ invoice, client, settings }: { invoice: Invoice; clie
               {Array.from({ length: emptyRowCount }).map((_, i) => (
                 <tr key={`e-${i}`} style={{ height: '22px' }}>
                   <td style={{ border: '1px solid #ccc', padding: '5px' }}>&nbsp;</td>
+                  <td style={{ border: '1px solid #ccc' }}></td>
                   <td style={{ border: '1px solid #ccc' }}></td>
                   <td style={{ border: '1px solid #ccc' }}></td>
                   <td style={{ border: '1px solid #ccc' }}></td>
