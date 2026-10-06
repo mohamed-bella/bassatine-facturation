@@ -11,9 +11,9 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: '#ea580c', // Orange-600
     icons: [
       {
-        src: '/icon.svg',
-        sizes: '192x192 512x512',
-        type: 'image/svg+xml',
+        src: '/bassatine-logo.png',
+        sizes: '240x80',
+        type: 'image/png',
       },
     ],
   }

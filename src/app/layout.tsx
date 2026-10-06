@@ -14,6 +14,23 @@ export const metadata: Metadata = {
   title: "Bassatine Facturation | Suite Professionnelle",
   description: "Gestion de facturation et proformas pour l'hôtellerie de luxe.",
   manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [
+      {
+        url: "/bassatine-logo.png",
+        type: "image/png",
+        sizes: "240x80",
+      },
+    ],
+    shortcut: ["/bassatine-logo.png"],
+    apple: [
+      {
+        url: "/bassatine-logo.png",
+        type: "image/png",
+        sizes: "240x80",
+      },
+    ],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
