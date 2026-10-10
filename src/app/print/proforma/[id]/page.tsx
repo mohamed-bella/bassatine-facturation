@@ -4,6 +4,7 @@ import { format, parseISO } from 'date-fns';
 import { formatMAD, calcLineSubtotal } from '@/lib/calculations';
 import { STAMP_URL } from '@/lib/document-assets';
 import { Proforma, Client, Settings } from '@/types';
+import BankTransferDetails from '@/components/BankTransferDetails';
 
 function ProformaPrintDoc({ proforma, client, settings }: { proforma: Proforma; client: Client | null; settings: Settings | null }) {
   const docTitle = 'FACTURE PROFORMA';
@@ -171,7 +172,8 @@ function ProformaPrintDoc({ proforma, client, settings }: { proforma: Proforma; 
           </table>
 
           {/* Totals table */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '6mm' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8mm', marginBottom: '6mm' }}>
+            <BankTransferDetails marginBottom="0" />
             <table style={{ width: '250px', borderCollapse: 'collapse', fontSize: '12px' }}>
               <tbody>
                 {[

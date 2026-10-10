@@ -22,6 +22,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { motion } from "framer-motion";
 import { STAMP_URL } from '@/lib/document-assets';
+import BankTransferDetails from '@/components/BankTransferDetails';
 
 import { chatInvoiceAi } from '@/app/actions/ai-actions';
 import { formatMAD } from '@/lib/calculations';
@@ -137,7 +138,8 @@ function AiPreviewDoc({ data, isProforma, settings }: { data: any, isProforma: b
             </tbody>
           </table>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '6mm' }}>
+          <div style={{ display: 'flex', justifyContent: isProforma ? 'space-between' : 'flex-end', alignItems: 'flex-start', gap: '8mm', marginBottom: '6mm' }}>
+            {isProforma && <BankTransferDetails marginBottom="0" />}
             <table style={{ width: '220px', borderCollapse: 'collapse', fontSize: '11px' }}>
               <tbody>
                 <tr>

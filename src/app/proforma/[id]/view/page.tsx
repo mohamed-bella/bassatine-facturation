@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { motion, AnimatePresence } from "framer-motion";
+import BankTransferDetails from '@/components/BankTransferDetails';
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   brouillon: { label: 'Brouillon', color: 'bg-slate-100 text-slate-500 border-slate-200' },
@@ -185,7 +186,8 @@ function ProformaPrintDoc({ proforma, client, settings }: { proforma: Proforma; 
             </tbody>
           </table>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '6mm' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8mm', marginBottom: '6mm' }}>
+            <BankTransferDetails marginBottom="0" />
             <table style={{ width: '240px', borderCollapse: 'collapse', fontSize: '11px' }}>
               <tbody>
                 {[

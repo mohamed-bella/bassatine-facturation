@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import BankTransferDetails from '@/components/BankTransferDetails';
 import {
   Command,
   CommandEmpty,
@@ -671,6 +672,8 @@ export default function ProformaBuilder({ initialData, isEdit = false }: Props) 
                     <span className="font-black tabular-nums">{formatMAD(totals.total_ttc)} MAD</span>
                   </div>
                 </div>
+
+                <BankTransferDetails />
               </div>
             </div>
 
