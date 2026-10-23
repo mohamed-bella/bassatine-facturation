@@ -12,7 +12,7 @@ export interface LineItem {
   nb_nights?: number;     // number of nights
   nb_clients?: number;    // number of clients/persons
   unit_price: number;
-  subtotal: number;       // quantity × unit_price, rounded to 2 decimals
+  subtotal: number;       // quantity × nights × unit_price, rounded to 2 decimals
 }
 
 // === Product Catalog ===

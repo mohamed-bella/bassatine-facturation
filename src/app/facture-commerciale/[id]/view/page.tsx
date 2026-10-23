@@ -174,7 +174,7 @@ function InvoicePrintDoc({ invoice, client, settings }: { invoice: Invoice; clie
                 const nbNights = item.nb_nights ?? '';
                 const nbClients = item.nb_clients ?? (item as any).nb_clients ?? '';
                 const price = item.unit_price || (item as any).price || 0;
-                const total = calcLineSubtotal(qty, price);
+                const total = calcLineSubtotal(qty, price, item.nb_nights ?? 1);
                 return (
                   <tr key={i}>
                     <td style={{ border: '1px solid #ccc', padding: '5px 7px' }}>{desc}</td>

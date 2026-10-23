@@ -25,7 +25,7 @@ import { STAMP_URL } from '@/lib/document-assets';
 import BankTransferDetails from '@/components/BankTransferDetails';
 
 import { chatInvoiceAi } from '@/app/actions/ai-actions';
-import { formatMAD } from '@/lib/calculations';
+import { calcLineSubtotal, formatMAD } from '@/lib/calculations';
 
 // Generic A4 preview
 function AiPreviewDoc({ data, isProforma, settings }: { data: any, isProforma: boolean, settings: any | null }) {
@@ -35,8 +35,8 @@ function AiPreviewDoc({ data, isProforma, settings }: { data: any, isProforma: b
   const items = data.items || [];
   const emptyRowCount = Math.max(0, 8 - items.length);
 
-  const subtotalHt = items.reduce((acc: number, item: any) => acc + (item.quantity * item.unit_price) / 1.1, 0);
-  const totalTtc = items.reduce((acc: number, item: any) => acc + (item.quantity * item.unit_price), 0);
+  const subtotalHt = items.reduce((acc: number, item: any) => acc + calcLineSubtotal(item.quantity, item.unit_price, item.nb_nights ?? 1) / 1.1, 0);
+  const totalTtc = items.reduce((acc: number, item: any) => acc + calcLineSubtotal(item.quantity, item.unit_price, item.nb_nights ?? 1), 0);
   const tvaAmount = totalTtc - subtotalHt;
 
   return (
@@ -124,7 +124,7 @@ function AiPreviewDoc({ data, isProforma, settings }: { data: any, isProforma: b
                   <td style={{ border: '1px solid #ccc', padding: '5px 7px' }}>{item.description}</td>
                   <td style={{ border: '1px solid #ccc', padding: '5px', textAlign: 'center' }}>{item.quantity}</td>
                   <td style={{ border: '1px solid #ccc', padding: '5px', textAlign: 'right' }}>{formatMAD(item.unit_price)}</td>
-                  <td style={{ border: '1px solid #ccc', padding: '5px', textAlign: 'right' }}>{formatMAD(item.quantity * item.unit_price)}</td>
+                  <td style={{ border: '1px solid #ccc', padding: '5px', textAlign: 'right' }}>{formatMAD(calcLineSubtotal(item.quantity, item.unit_price, item.nb_nights ?? 1))}</td>
                 </tr>
               ))}
               {Array.from({ length: emptyRowCount }).map((_, i) => (

@@ -4,10 +4,10 @@ const TVA_RATE = 0.10; // 10%
 
 /**
  * Calculate the subtotal of a single line item.
- * subtotal = quantity × unit_price, rounded to 2 decimals.
+ * subtotal = quantity × nights × unit_price, rounded to 2 decimals.
  */
-export function calcLineSubtotal(quantity: number, unitPrice: number): number {
-  return Math.round(quantity * unitPrice * 100) / 100;
+export function calcLineSubtotal(quantity: number, unitPrice: number, nights = 1): number {
+  return Math.round(quantity * nights * unitPrice * 100) / 100;
 }
 
 /**
@@ -19,7 +19,7 @@ export function calcDocumentTotals(
   items: LineItem[],
   tvaMode: TvaMode
 ): { subtotal_ht: number; tva_amount: number; total_ttc: number } {
-  const rawSum = items.reduce((acc, item) => acc + calcLineSubtotal(item.quantity, item.unit_price), 0);
+  const rawSum = items.reduce((acc, item) => acc + calcLineSubtotal(item.quantity, item.unit_price, item.nb_nights ?? 1), 0);
 
   let subtotal_ht: number;
   let total_ttc: number;

@@ -72,7 +72,7 @@ export default function ProformaBuilder({ initialData, isEdit = false }: Props) 
           ...item,
           description: item.description || (item as any).desc || '',
           quantity: item.quantity || (item as any).qty || 1,
-          nb_nights: item.nb_nights ?? 0,
+          nb_nights: item.nb_nights ?? 1,
           unit_price: item.unit_price || (item as any).price || 0
         }))
       };
@@ -125,7 +125,7 @@ export default function ProformaBuilder({ initialData, isEdit = false }: Props) 
               nb_nights: item.nb_nights || 1,
               nb_clients: item.nb_clients || 1,
               unit_price: item.unit_price || 0,
-              subtotal: (item.quantity || 1) * (item.unit_price || 0)
+              subtotal: calcLineSubtotal(item.quantity || 1, item.unit_price || 0, item.nb_nights || 1)
             })),
             amount_words: aiData.amount_words || '',
             notes: aiData.notes || prev.notes,
@@ -326,7 +326,7 @@ export default function ProformaBuilder({ initialData, isEdit = false }: Props) 
   const updateItem = (index: number, field: keyof LineItem, value: any) => {
     const newItems = [...(formData.items_json || [])];
     newItems[index] = { ...newItems[index], [field]: value };
-    newItems[index].subtotal = calcLineSubtotal(newItems[index].quantity, newItems[index].unit_price);
+    newItems[index].subtotal = calcLineSubtotal(newItems[index].quantity, newItems[index].unit_price, newItems[index].nb_nights ?? 1);
     setFormData({ ...formData, items_json: newItems });
   };
 
@@ -545,7 +545,7 @@ export default function ProformaBuilder({ initialData, isEdit = false }: Props) 
                     </div>
                     <div className="col-span-4 md:col-span-2 space-y-1">
                       <Label className="text-[10px] font-bold text-slate-400">Nuits</Label>
-                      <Input type="number" min="0" value={item.nb_nights ?? 0} onChange={e => updateItem(idx, 'nb_nights', parseInt(e.target.value) || 0)}
+                      <Input type="number" min="1" value={item.nb_nights ?? 1} onChange={e => updateItem(idx, 'nb_nights', Math.max(1, parseInt(e.target.value) || 1))}
                         className="bg-white border-slate-200 h-10 rounded-lg text-sm text-center" disabled={isLocked} />
                     </div>
                     <div className="col-span-4 md:col-span-2 space-y-1">
@@ -561,7 +561,7 @@ export default function ProformaBuilder({ initialData, isEdit = false }: Props) 
                     <div className="col-span-6 md:col-span-3 flex items-end justify-between rounded-lg border border-slate-100 bg-slate-100/50 p-2">
                       <div className="flex min-w-0 flex-col">
                         <span className="text-[8px] font-black uppercase tracking-tighter text-slate-400">Sous-total</span>
-                        <span className="text-sm font-bold text-slate-900 tabular-nums">{formatMAD(calcLineSubtotal(item.quantity, item.unit_price))}</span>
+                        <span className="text-sm font-bold text-slate-900 tabular-nums">{formatMAD(calcLineSubtotal(item.quantity, item.unit_price, item.nb_nights ?? 1))}</span>
                       </div>
                       <Button variant="ghost" size="icon" onClick={() => removeItem(idx)} disabled={isLocked}
                         className="h-8 w-8 shrink-0 rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 opacity-0 group-hover:opacity-100 transition-all">
@@ -650,7 +650,7 @@ export default function ProformaBuilder({ initialData, isEdit = false }: Props) 
                       <span className="col-span-1 text-center tabular-nums">{item.nb_nights ?? 0}</span>
                       <span className="col-span-1 text-center tabular-nums">{item.nb_clients ?? 0}</span>
                       <span className="col-span-3 text-right tabular-nums">{formatMAD(item.unit_price)}</span>
-                      <span className="col-span-3 text-right tabular-nums font-bold">{formatMAD(calcLineSubtotal(item.quantity, item.unit_price))}</span>
+                      <span className="col-span-3 text-right tabular-nums font-bold">{formatMAD(calcLineSubtotal(item.quantity, item.unit_price, item.nb_nights ?? 1))}</span>
                     </div>
                   ))}
                 </div>

@@ -115,7 +115,7 @@ export default function InvoiceBuilder({ initialData, isEdit = false }: Props) {
                 nb_nights: parseInt(String(item.nb_nights)) || 1,
                 nb_clients: parseInt(String(item.nb_clients)) || 1,
                 unit_price: price,
-                subtotal: qty * price
+                subtotal: calcLineSubtotal(qty, price, parseInt(String(item.nb_nights)) || 1)
               };
             }),
             amount_words: String(aiData.amount_words || '').toUpperCase().slice(0, 255),
@@ -217,7 +217,7 @@ export default function InvoiceBuilder({ initialData, isEdit = false }: Props) {
   const updateItem = (index: number, field: keyof LineItem, value: any) => {
     const newItems = [...(formData.items_json || [])];
     newItems[index] = { ...newItems[index], [field]: value };
-    newItems[index].subtotal = calcLineSubtotal(newItems[index].quantity, newItems[index].unit_price);
+    newItems[index].subtotal = calcLineSubtotal(newItems[index].quantity, newItems[index].unit_price, newItems[index].nb_nights ?? 1);
     setFormData({ ...formData, items_json: newItems });
   };
 
@@ -498,7 +498,7 @@ export default function InvoiceBuilder({ initialData, isEdit = false }: Props) {
                     </div>
                     <div className="col-span-4 md:col-span-2 space-y-1">
                       <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nuits</Label>
-                      <Input type="number" min="0" value={item.nb_nights ?? 0} onChange={e => updateItem(idx, 'nb_nights', parseInt(e.target.value) || 0)}
+                      <Input type="number" min="1" value={item.nb_nights ?? 1} onChange={e => updateItem(idx, 'nb_nights', Math.max(1, parseInt(e.target.value) || 1))}
                         className="bg-white border-slate-200 h-10 rounded-lg text-sm text-center px-1" disabled={isLocked} />
                     </div>
                     <div className="col-span-4 md:col-span-2 space-y-1">
@@ -514,7 +514,7 @@ export default function InvoiceBuilder({ initialData, isEdit = false }: Props) {
                     <div className="col-span-6 md:col-span-3 flex items-center justify-between bg-slate-100/50 p-2 rounded-xl border border-slate-100">
                       <div className="flex flex-col">
                         <span className="text-[8px] font-black uppercase text-slate-400 tracking-tighter">Sous-total</span>
-                        <span className="text-sm font-black text-slate-900 tabular-nums leading-none">{formatMAD(calcLineSubtotal(item.quantity, item.unit_price))}</span>
+                        <span className="text-sm font-black text-slate-900 tabular-nums leading-none">{formatMAD(calcLineSubtotal(item.quantity, item.unit_price, item.nb_nights ?? 1))}</span>
                       </div>
                       <Button variant="ghost" size="icon" onClick={() => removeItem(idx)} disabled={isLocked}
                         className="w-8 h-8 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-all">
@@ -588,7 +588,7 @@ export default function InvoiceBuilder({ initialData, isEdit = false }: Props) {
                       <span className="col-span-1 text-center tabular-nums">{item.nb_nights ?? 0}</span>
                       <span className="col-span-1 text-center tabular-nums">{item.nb_clients ?? 0}</span>
                       <span className="col-span-3 text-right tabular-nums">{formatMAD(item.unit_price)}</span>
-                      <span className="col-span-3 text-right tabular-nums font-bold">{formatMAD(calcLineSubtotal(item.quantity, item.unit_price))}</span>
+                      <span className="col-span-3 text-right tabular-nums font-bold">{formatMAD(calcLineSubtotal(item.quantity, item.unit_price, item.nb_nights ?? 1))}</span>
                     </div>
                   ))}
                 </div>
