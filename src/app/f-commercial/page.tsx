@@ -19,6 +19,8 @@ import {
   CheckCircle2,
   CreditCard,
   Sparkles,
+  CalendarRange,
+  Download,
 } from 'lucide-react';
 import { motion } from "framer-motion";
 import Link from 'next/link';
@@ -50,6 +52,9 @@ export default function InvoicesPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [exportFrom, setExportFrom] = useState('');
+  const [exportTo, setExportTo] = useState('');
+  const [exportLoading, setExportLoading] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -72,7 +77,7 @@ export default function InvoicesPage() {
     const enrichedInvoices = (iData || []).map(inv => {
       const invPayments = paymentMap[inv.id] || [];
       const paid = calcAmountPaid(invPayments);
-      const totalTtc = Number(inv.total_ttc || (inv as any).grand_total_ttc || 0);
+      const totalTtc = Number(inv.total_ttc || (inv as { grand_total_ttc?: number }).grand_total_ttc || 0);
       const due = calcAmountDue(totalTtc, paid);
 
       // Simple overdue calculation: if due_date is passed and not fully paid
@@ -88,7 +93,7 @@ export default function InvoicesPage() {
         total_ttc: totalTtc,
         amount_paid: paid,
         amount_due: due,
-        status: status as any
+        status: status as Invoice['status']
       };
     });
 
@@ -102,6 +107,41 @@ export default function InvoicesPage() {
     if (!confirm('Supprimer cette facture ?')) return;
     await supabase.from('invoices').delete().eq('id', id);
     fetchData();
+  };
+
+  const handleExportPDF = async () => {
+    if (!exportFrom || !exportTo) {
+      alert('Sélectionnez une date de début et une date de fin.');
+      return;
+    }
+
+    if (exportFrom > exportTo) {
+      alert('La date de début doit être antérieure ou égale à la date de fin.');
+      return;
+    }
+
+    setExportLoading(true);
+    try {
+      const response = await fetch(`/api/pdf/generate-batch?from=${encodeURIComponent(exportFrom)}&to=${encodeURIComponent(exportTo)}`);
+      if (!response.ok) {
+        const result = await response.json().catch(() => null);
+        throw new Error(result?.error || 'Impossible de générer le PDF.');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `factures-${exportFrom}-${exportTo}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+    } catch (error: unknown) {
+      alert(error instanceof Error ? error.message : 'Erreur lors de la génération du PDF.');
+    } finally {
+      setExportLoading(false);
+    }
   };
 
   const filtered = useMemo(() => {
@@ -180,6 +220,35 @@ export default function InvoicesPage() {
           ))}
         </div>
       </div>
+
+      {/* BATCH PDF EXPORT */}
+      <Card className="border border-orange-100 rounded-[2rem] bg-orange-50/40 shadow-sm p-5 md:p-6">
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-5">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl bg-white border border-orange-100 flex items-center justify-center shrink-0">
+              <CalendarRange className="w-5 h-5 text-orange-600" />
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-orange-600">Export groupé PDF</p>
+              <p className="text-sm font-bold text-slate-700 mt-1">Télécharger toutes les factures de la période dans un seul PDF.</p>
+            </div>
+          </div>
+          <div className="flex flex-col sm:flex-row sm:items-end gap-3">
+            <div className="space-y-1.5">
+              <label htmlFor="export-from" className="block text-[10px] font-black uppercase tracking-widest text-slate-400">Du</label>
+              <Input id="export-from" type="date" value={exportFrom} onChange={e => setExportFrom(e.target.value)} className="h-11 w-full sm:w-40 bg-white border-orange-100 rounded-xl text-xs font-bold" />
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="export-to" className="block text-[10px] font-black uppercase tracking-widest text-slate-400">Au</label>
+              <Input id="export-to" type="date" value={exportTo} onChange={e => setExportTo(e.target.value)} className="h-11 w-full sm:w-40 bg-white border-orange-100 rounded-xl text-xs font-bold" />
+            </div>
+            <Button onClick={handleExportPDF} disabled={exportLoading} className="h-11 px-5 bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-orange-600/20">
+              {exportLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
+              {exportLoading ? 'Génération...' : 'Exporter PDF'}
+            </Button>
+          </div>
+        </div>
+      </Card>
 
       {/* TABLE */}
       <Card className="border border-slate-200 rounded-[2rem] shadow-[0_10px_40px_-15px_rgba(0,0,0,0.05)] overflow-hidden bg-white">
